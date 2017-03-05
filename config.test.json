@@ -1,0 +1,10 @@
+{
+	"client_id": "my-client-id",
+	"client_secret": "my-client-secret",
+	"app_protocol": "http",
+	"app_hostname": "localhost",
+    "app_port": 8080,
+    "app_static_path": "/epages-app",
+    "app_api_path": "/epages-app-api",
+    "callback_path": "/callback"
+}

@@ -33,7 +33,7 @@ public class AppInstallationVerticle extends AbstractVerticle {
             final String apiUrl = body.getString("api_url");
             final String accessTokenUrl = body.getString("access_token_url");
             final String tokenPath = accessTokenUrl.substring(apiUrl.length());
-
+            
             if (!(code != null && apiUrl != null && accessTokenUrl != null && tokenPath != null)) {
                 message.reply(errorReply().put("message", "invalid parameters"));
             } else {
@@ -55,12 +55,7 @@ public class AppInstallationVerticle extends AbstractVerticle {
                     }
                 });
             }
-
+            
         });
-
     }
-
-    public void stop() {
-    }
-
 }

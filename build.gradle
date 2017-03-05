@@ -17,20 +17,27 @@ dependencies {
     compile "io.vertx:vertx-core:$vertxVersion"
     compile "io.vertx:vertx-web:$vertxVersion"
     compile "io.vertx:vertx-auth-oauth2:$vertxVersion"
-	testCompile "junit:junit:4.12"
-	testCompile "io.vertx:vertx-unit:$vertxVersion"
+    testCompile "junit:junit:4.12"
+    testCompile "io.vertx:vertx-unit:$vertxVersion"
 }
 
+def configFileName = 'config.test.json' 
+def mainVerticleName = 'de.thokari.epages.EpagesAppMainVerticle'
 mainClassName = 'io.vertx.core.Launcher'
-def mainVerticleName = "de.thokari.epages.EpagesAppMainVerticle"
 
-// Vert.x watches for file changes in all subdirectories
-// of src/ but only for files with .java extension
-def watchForChange = 'src/**/*.java'
+// Vert.x will watch for file changes in this location
+def watchForChange = "src/**/*.java,${configFileName}"
 // Vert.x will call this task on changes
 def doOnChange = './gradlew classes'
+
 run {
-    args = ['run', mainVerticleName, "--redeploy=$watchForChange", "--launcher-class=$mainClassName", "--on-redeploy=$doOnChange", "-conf", "config.test.json"]
+    args = [
+        'run', mainVerticleName,
+        "-conf", configFileName,
+        "--launcher-class=$mainClassName",
+        "--redeploy=$watchForChange",
+        "--on-redeploy=$doOnChange"
+    ]
 }
 
 shadowJar {

@@ -21,7 +21,7 @@ public class HttpServerVerticle extends AbstractVerticle {
         final String appProtocol = config().getString("app_protocol");
         final String appHostname = config().getString("app_hostname");
         final Integer appPort = config().getInteger("app_port");
-        final String appPath = config().getString("app_path");
+        final String appStaticPath = config().getString("app_static_path");
         final String appApiPath = config().getString("app_api_path");
         final String callbackPath = config().getString("callback_path");
 
@@ -44,7 +44,7 @@ public class HttpServerVerticle extends AbstractVerticle {
                     .put("access_token_url", accessTokenUrl);
                 vertx.eventBus().send(AppInstallationVerticle.EVENT_BUS_ADDRESS, message, reply -> {
                     System.out.println(reply.result().body().toString());
-                    response.headers().add("Location", appPath);
+                    response.headers().add("Location", appStaticPath);
                     response.setStatusCode(302).end();
                 });
             }
@@ -56,7 +56,7 @@ public class HttpServerVerticle extends AbstractVerticle {
         });
 
         mainRouter.mountSubRouter(appApiPath, apiRouter);
-        mainRouter.route(appPath).handler(StaticHandler.create());
+        mainRouter.route(appStaticPath).handler(StaticHandler.create());
 
         PemKeyCertOptions certOptions = new PemKeyCertOptions();
 
