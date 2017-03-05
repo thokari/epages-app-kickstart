@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'application'
     id 'com.github.johnrengelman.shadow' version '1.2.3'
+    id 'eclipse'
 }
 
 repositories {
@@ -14,11 +15,14 @@ def vertxVersion = '3.3.3'
 
 dependencies {
     compile "io.vertx:vertx-core:$vertxVersion"
+    compile "io.vertx:vertx-web:$vertxVersion"
     compile "io.vertx:vertx-auth-oauth2:$vertxVersion"
+	testCompile "junit:junit:4.12"
+	testCompile "io.vertx:vertx-unit:$vertxVersion"
 }
 
 mainClassName = 'io.vertx.core.Launcher'
-def mainVerticleName = "de.thokari.epages.EpagesAppVerticle"
+def mainVerticleName = "de.thokari.epages.EpagesAppMainVerticle"
 
 // Vert.x watches for file changes in all subdirectories
 // of src/ but only for files with .java extension
@@ -26,7 +30,7 @@ def watchForChange = 'src/**/*.java'
 // Vert.x will call this task on changes
 def doOnChange = './gradlew classes'
 run {
-    args = ['run', mainVerticleName, "--redeploy=$watchForChange", "--launcher-class=$mainClassName", "--on-redeploy=$doOnChange"]
+    args = ['run', mainVerticleName, "--redeploy=$watchForChange", "--launcher-class=$mainClassName", "--on-redeploy=$doOnChange", "-conf", "config.test.json"]
 }
 
 shadowJar {
@@ -37,8 +41,4 @@ shadowJar {
     mergeServiceFiles {
         include 'META-INF/services/io.vertx.core.spi.VerticleFactory'
     }
-}
-
-task wrapper(type: Wrapper) {
-  gradleVersion = '2.10'
 }
