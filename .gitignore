@@ -1,7 +1,8 @@
 build/
 deploy/
 .gradle/
-/bin/
+.vertx/
+bin/
 .project
 .classpath
 .settings/
