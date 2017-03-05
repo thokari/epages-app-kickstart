@@ -1,5 +1,11 @@
 package de.thokari.epages;
 
+import static de.thokari.epages.JsonUtils.errorReply;
+import static de.thokari.epages.JsonUtils.okReply;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.oauth2.OAuth2Auth;
@@ -8,44 +14,44 @@ import io.vertx.ext.auth.oauth2.OAuth2FlowType;
 
 public class AppInstallationVerticle extends AbstractVerticle {
 
-    final String clientId = System.getenv("CLIENT_ID") != null
-        ? System.getenv("CLIENT_ID")
-        : config().getString("client_id");
-    final String clientSecret = System.getenv("CLIENT_SECRET") != null
-        ? System.getenv("CLIENT_SECRET")
-        : config().getString("client_secret");
+    public static final String EVENT_BUS_ADDRESS = "app_installation";
 
-    final String appUrl = System.getenv("APP_URL") != null ? System.getenv("APP_URL") : config().getString("app_url");
-    final String callbackUrlOverride = System.getenv("CALLBACK_URL") != null
-        ? System.getenv("CALLBACK_URL")
-        : config().getString("callback_url");
-    final String callbackUrl = callbackUrlOverride != null ? callbackUrlOverride : (appUrl + "/callback");
+    public void start() throws MalformedURLException {
 
-    public void start() {
+        final String clientId = config().getString("client_id");
+        final String clientSecret = config().getString("client_secret");
+        final String appProtocol = config().getString("app_protocol");
+        final String appHostname = config().getString("app_hostname");
+        final Integer appPort = config().getInteger("app_port");
+        final String callbackPath = config().getString("callback_path");
+        final String callbackUrl = new URL(appProtocol, appHostname, appPort, callbackPath).toString();
 
-        vertx.eventBus().consumer("app_installation", message -> {
+        vertx.eventBus().consumer(EVENT_BUS_ADDRESS, message -> {
             JsonObject body = (JsonObject) message.body();
 
-            if (!(body.containsKey("code") && body.containsKey("return_url") && body.containsKey("api_url")
-                && body.containsKey("access_token_url"))) {
-                message.reply(new JsonObject().put("error", "invalid parameters"));
-            } else {
-                final String code = body.getString("code");
-                final String apiUrl = body.getString("api_url");
-                final String accessTokenUrl = body.getString("access_token_url");
-                final String tokenPath = accessTokenUrl.substring(apiUrl.length());
+            final String code = body.getString("code");
+            final String apiUrl = body.getString("api_url");
+            final String accessTokenUrl = body.getString("access_token_url");
+            final String tokenPath = accessTokenUrl.substring(apiUrl.length());
 
-                OAuth2ClientOptions credentials = new OAuth2ClientOptions().setClientID(clientId)
-                    .setClientSecret(clientSecret).setSite(apiUrl).setTokenPath(tokenPath);
+            if (!(code != null && apiUrl != null && accessTokenUrl != null && tokenPath != null)) {
+                message.reply(errorReply().put("message", "invalid parameters"));
+            } else {
+
+                OAuth2ClientOptions credentials = new OAuth2ClientOptions()
+                    .setClientID(clientId).setClientSecret(clientSecret)
+                    .setSite(apiUrl).setTokenPath(tokenPath);
                 OAuth2Auth oauth2 = OAuth2Auth.create(vertx, OAuth2FlowType.AUTH_CODE, credentials);
 
                 oauth2.getToken(new JsonObject().put("code", code).put("redirect_uri", callbackUrl), res -> {
                     if (res.failed()) {
-                        message.reply(new JsonObject().put("error", "invalid code"));
+                        res.cause().printStackTrace();
+                        message.reply(new JsonObject().put("status", "error").put("message", res.cause().getMessage()));
                     } else {
-                        System.out.println(res.result().toString());
-                        message.reply(new JsonObject().put("token", res.result()));
+                        String token = res.result().principal().getString("access_token");
+                        System.out.println(token);
                         // save the token and continue...
+                        message.reply(okReply());
                     }
                 });
             }
