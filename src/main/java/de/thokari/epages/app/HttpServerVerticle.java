@@ -1,4 +1,4 @@
-package de.thokari.epages;
+package de.thokari.epages.app;
 
 import static io.vertx.core.http.HttpMethod.GET;
 

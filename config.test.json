@@ -1,10 +1,21 @@
 {
-	"client_id": "my-client-id",
-	"client_secret": "my-client-secret",
-	"app_protocol": "http",
-	"app_hostname": "localhost",
-    "app_port": 8080,
-    "app_static_path": "/epages-app",
-    "app_api_path": "/epages-app-api",
-    "callback_path": "/callback"
+    "clientId": "my-client-id",
+    "clientSecret": "my-client-secret",
+    "appProtocol": "http",
+    "appHostname": "localhost",
+    "appPort": 8080,
+    "appStaticPath": "/epages-app",
+    "appApiPath": "/epages-app-api",
+    "callbackPath": "/callback",
+
+    "database": {
+        "host": "localhost",
+        "port": 5432,
+        "maxPoolSize": 10,
+        "username": "vertx",
+        "password": "vertx",
+        "database": "epages-app-test",
+        "charset": "utf-8",
+        "queryTimeout": 2000
+    }
 }

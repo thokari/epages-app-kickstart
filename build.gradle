@@ -1,51 +1,80 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'org.postgresql:postgresql:9.4.1212'
+    }
+}
+
 plugins {
     id 'java'
     id 'application'
+    id 'org.flywaydb.flyway' version '4.1.2'
     id 'com.github.johnrengelman.shadow' version '1.2.3'
     id 'eclipse'
 }
+
+version = '0.5'
+sourceCompatibility = '1.8'
+def vertxVersion = '3.3.3'
 
 repositories {
     jcenter()
 }
 
-sourceCompatibility = '1.8'
-
-def vertxVersion = '3.3.3'
-
 dependencies {
-    compile "io.vertx:vertx-core:$vertxVersion"
-    compile "io.vertx:vertx-web:$vertxVersion"
-    compile "io.vertx:vertx-auth-oauth2:$vertxVersion"
+    compile "io.vertx:vertx-core:${vertxVersion}"
+    compile "io.vertx:vertx-web:${vertxVersion}"
+    compile "io.vertx:vertx-mysql-postgresql-client:${vertxVersion}"
+    compile "io.vertx:vertx-auth-oauth2:${vertxVersion}"
+    compile 'org.flywaydb:flyway-core:4.1.2'
+
     testCompile "junit:junit:4.12"
-    testCompile "io.vertx:vertx-unit:$vertxVersion"
+    testCompile "io.vertx:vertx-unit:${vertxVersion}"
+    testCompile 'com.github.stefanbirkner:system-rules:1.16.0'
+
+    runtime "org.slf4j:slf4j-api:1.7.24"
 }
 
-def configFileName = 'config.test.json' 
-def mainVerticleName = 'de.thokari.epages.EpagesAppMainVerticle'
+ext {
+    configFile = file 'config.test.json'
+    databaseConfig = new groovy.json.JsonSlurper().parse(configFile).database
+}
+
+def mainVerticleName = 'de.thokari.epages.app.EpagesAppMainVerticle'
 mainClassName = 'io.vertx.core.Launcher'
 
 // Vert.x will watch for file changes in this location
-def watchForChange = "src/**/*.java,${configFileName}"
+def watchForChange = "src/**/*.java,${configFile}"
 // Vert.x will call this task on changes
 def doOnChange = './gradlew classes'
 
 run {
     args = [
         'run', mainVerticleName,
-        "-conf", configFileName,
+        "-conf", configFile.absolutePath,
         "--launcher-class=$mainClassName",
         "--redeploy=$watchForChange",
         "--on-redeploy=$doOnChange"
     ]
 }
 
+flyway {
+    url = "jdbc:postgresql://${databaseConfig.host}:${databaseConfig.port}/${databaseConfig.database}"
+    user = databaseConfig.username
+    password = databaseConfig.password
+}
+
 shadowJar {
     classifier = 'fat'
     manifest {
-        attributes "Main-Verticle": mainVerticleName
+        attributes 'Main-Verticle': mainVerticleName
     }
     mergeServiceFiles {
         include 'META-INF/services/io.vertx.core.spi.VerticleFactory'
     }
 }
+
+jar.enabled false
+build.dependsOn shadowJar
