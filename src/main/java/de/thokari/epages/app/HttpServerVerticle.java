@@ -4,8 +4,10 @@ import static io.vertx.core.http.HttpMethod.GET;
 
 import java.net.MalformedURLException;
 
+import de.thokari.epages.app.model.AppConfig;
+import de.thokari.epages.app.model.InstallationRequest;
+import de.thokari.epages.app.model.Model;
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerResponse;
@@ -18,35 +20,29 @@ public class HttpServerVerticle extends AbstractVerticle {
 
     public void start() throws MalformedURLException {
 
-        final String appProtocol = config().getString("app_protocol");
-        final String appHostname = config().getString("app_hostname");
-        final Integer appPort = config().getInteger("app_port");
-        final String appStaticPath = config().getString("app_static_path");
-        final String appApiPath = config().getString("app_api_path");
-        final String callbackPath = config().getString("callback_path");
+        final AppConfig appConfig = Model.fromJsonObject(config(), AppConfig.class);
 
         Router mainRouter = Router.router(vertx);
-        mainRouter.route(GET, callbackPath).handler(ctx -> {
+        mainRouter.route(GET, appConfig.callbackPath).handler(ctx -> {
 
-            MultiMap query = ctx.request().params();
-            final String code = query.get("code");
-            final String returnUrl = query.get("return_url");
-            final String apiUrl = query.get("api_url");
-            final String accessTokenUrl = query.get("access_token_url");
             final HttpServerResponse response = ctx.response();
+            InstallationRequest event = null;
 
-            if (!(code != null && returnUrl != null && apiUrl != null && accessTokenUrl != null)) {
-                response.setStatusCode(400).end("invalid parameters");
-            } else {
-                JsonObject message = new JsonObject()
-                    .put("code", code)
-                    .put("api_url", apiUrl)
-                    .put("access_token_url", accessTokenUrl);
-                vertx.eventBus().send(AppInstallationVerticle.EVENT_BUS_ADDRESS, message, reply -> {
-                    System.out.println(reply.result().body().toString());
-                    response.headers().add("Location", appStaticPath);
-                    response.setStatusCode(302).end();
-                });
+            try {
+                event = InstallationRequest.fromMultiMap(ctx.request().params());
+                vertx.eventBus().<JsonObject>send(
+                    AppInstallationVerticle.EVENT_BUS_ADDRESS, event.toJsonObject(), reply -> {
+
+                        JsonObject result = reply.result().body();
+                        if ("error".equals(result.getString("status"))) {
+                            response.setStatusCode(500).end(result.getString("message"));
+                        } else {
+                            response.headers().add("Location", appConfig.appStaticPath);
+                            response.setStatusCode(302).end();
+                        }
+                    });
+            } catch (IllegalArgumentException e) {
+                response.setStatusCode(400).end(e.getMessage());
             }
         });
 
@@ -55,17 +51,18 @@ public class HttpServerVerticle extends AbstractVerticle {
             ctx.response().end("version: 0.1");
         });
 
-        mainRouter.mountSubRouter(appApiPath, apiRouter);
-        mainRouter.route(appStaticPath).handler(StaticHandler.create());
+        mainRouter.mountSubRouter(appConfig.appApiPath, apiRouter);
+        mainRouter.route(appConfig.appStaticPath).handler(StaticHandler.create());
 
         PemKeyCertOptions certOptions = new PemKeyCertOptions();
 
         HttpServerOptions serverOptions = new HttpServerOptions()
-            .setSsl("https" == appProtocol)
+            .setSsl("https" == appConfig.appProtocol)
             .setPemKeyCertOptions(certOptions);
 
-        HttpServer server = vertx.createHttpServer(serverOptions);
-        server.requestHandler(mainRouter::accept).listen(appPort, appHostname);
+        HttpServer server = vertx
+            .createHttpServer(serverOptions);
+        server.requestHandler(mainRouter::accept).listen(appConfig.appPort, appConfig.appHostname);
     }
 
 }

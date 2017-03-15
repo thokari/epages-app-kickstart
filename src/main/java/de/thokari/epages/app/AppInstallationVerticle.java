@@ -4,9 +4,9 @@ import static de.thokari.epages.app.JsonUtils.okReply;
 import static de.thokari.epages.app.JsonUtils.serverErrorReply;
 
 import java.net.MalformedURLException;
-import java.util.Date;
 
 import de.thokari.epages.app.model.AppConfig;
+import de.thokari.epages.app.model.Installation;
 import de.thokari.epages.app.model.InstallationRequest;
 import de.thokari.epages.app.model.Model;
 import io.vertx.core.AbstractVerticle;
@@ -57,9 +57,9 @@ public class AppInstallationVerticle extends AbstractVerticle {
 
         Future<AccessToken> future = Future.future();
         OAuth2Auth oAuth2 = OAuth2Auth.create(vertx, OAuth2FlowType.AUTH_CODE, credentials);
-        
+
         JsonObject tokenParameters = new JsonObject().put("code", code).put("redirect_uri", returnUrl);
-        
+
         oAuth2.getToken(tokenParameters, future.completer());
 
         return future;
@@ -73,22 +73,21 @@ public class AppInstallationVerticle extends AbstractVerticle {
             message.reply(serverErrorReply().put("message", tokenResponse.cause().getMessage()));
         } else {
             String token = tokenResponse.result().principal().getString("access_token");
-            Database.withConnection().setHandler(saveToken(token, message));
+            Installation installation = new Installation("Milestones", event.apiUrl, token);
+            Database.withConnection().setHandler(saveInstallation(installation, message));
         }
     }
 
-    private Handler<AsyncResult<SQLConnection>> saveToken(String token, Message<JsonObject> message) {
+    private Handler<AsyncResult<SQLConnection>> saveInstallation(Installation installation,
+        Message<JsonObject> message) {
         return connected -> {
             if (connected.failed()) {
                 connected.cause().printStackTrace();
                 message.reply(serverErrorReply().put("message", connected.cause().getMessage()));
             } else {
                 SQLConnection connection = connected.result();
-
-                String sql = "INSERT INTO installations (token, created) VALUES (?, CAST(? AS DATE))";
-
-                JsonArray params = new JsonArray().add(token).add(new Date().toString());
-
+                String sql = installation.getInsertQuery();
+                JsonArray params = installation.getInsertQueryParams();
                 connection.queryWithParams(sql, params, queryResult -> {
                     if (queryResult.failed()) {
                         queryResult.cause().printStackTrace();

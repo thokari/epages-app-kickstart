@@ -9,7 +9,7 @@ import org.junit.runners.JUnit4;
 import io.vertx.core.json.JsonObject;
 
 @RunWith(JUnit4.class)
-public class InstallationEventTest {
+public class InstallationRequestTest {
 
     final JsonObject source = new JsonObject()
         .put("code", "f32ddSbuff2IGAYvtiwYQiyHyuLJWbey")

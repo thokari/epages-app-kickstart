@@ -77,4 +77,5 @@ shadowJar {
 }
 
 jar.enabled false
+test.dependsOn flywayClean, flywayMigrate
 build.dependsOn shadowJar

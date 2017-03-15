@@ -100,14 +100,15 @@ public class AppInstallationVerticleTest {
                         JsonObject body = response.result().body();
                         context.assertEquals("ok", body.getString("status"), body.getString("message"));
 
-                        Database.withConnection().setHandler(connected -> {
-                            connected.result().query(
-                                "SELECT * FROM installations WHERE token = " + tokenResponse.getString("access_token"),
-                                result -> {
+//                        Database.withConnection().setHandler(connected -> {
+//                            connected.result().query(
+//                                "SELECT * FROM installations WHERE access_token = " + tokenResponse.getString("access_token"),
+//                                result -> {
+//
+//                                });
+//                        });
 
-                                });
-                        });
-
+                       
                         async.complete();
                     });
             });

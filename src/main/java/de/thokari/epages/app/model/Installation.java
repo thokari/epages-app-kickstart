@@ -13,7 +13,7 @@ import io.vertx.core.json.JsonArray;
 
 public class Installation extends Model {
 
-    public final static String TABLE_NAME = "installations";
+    public static final String TABLE_NAME = "installations";
 
     @JsonProperty("api_url")
     public String apiUrl;
@@ -42,8 +42,9 @@ public class Installation extends Model {
         this.accessToken = accessToken;
 
         this.created = new Timestamp(new Date().getTime()).toInstant().toString();
-
     }
+    
+    
 
     @JsonIgnore
     public String getInsertQuery() {

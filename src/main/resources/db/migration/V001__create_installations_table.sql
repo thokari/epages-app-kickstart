@@ -5,5 +5,5 @@ CREATE TABLE installations (
     email_confirmed BOOLEAN,
     access_token VARCHAR(2048),
     created DATE,
-    PRIMARY KEY (api_url, access_token)
+    PRIMARY KEY (api_url)
 );
