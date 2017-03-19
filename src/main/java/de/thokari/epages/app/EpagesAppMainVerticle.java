@@ -13,8 +13,6 @@ public class EpagesAppMainVerticle extends AbstractVerticle {
 
         AppConfig appConfig = Model.fromJsonObject(config(), AppConfig.class);
 
-        Database.init(vertx, appConfig.database);
-
         DeploymentOptions deploymentOpts = new DeploymentOptions().setConfig(appConfig.toJsonObject());
 
         Future<String> appInstallationDeployed = Future.future();

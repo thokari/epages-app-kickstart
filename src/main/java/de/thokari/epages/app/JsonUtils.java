@@ -7,11 +7,15 @@ public class JsonUtils {
     public static JsonObject serverErrorReply(int code) {
         return errorReply().put("code", code);
     }
-    
+
     public static JsonObject serverErrorReply() {
         return errorReply().put("code", 500);
     }
-    
+
+    public static JsonObject serverErrorReply(String message, String cause) {
+        return serverErrorReply().put("message", message).put("cause", cause);
+    }
+
     public static JsonObject clientErrorReply() {
         return errorReply().put("code", 400);
     }

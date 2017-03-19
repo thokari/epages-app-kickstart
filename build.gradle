@@ -17,7 +17,7 @@ plugins {
 
 version = '0.5'
 sourceCompatibility = '1.8'
-def vertxVersion = '3.3.3'
+def vertxVersion = '3.4.1'
 
 repositories {
     jcenter()
@@ -34,7 +34,7 @@ dependencies {
     testCompile "io.vertx:vertx-unit:${vertxVersion}"
     testCompile 'com.github.stefanbirkner:system-rules:1.16.0'
 
-    runtime "org.slf4j:slf4j-api:1.7.24"
+    runtime "ch.qos.logback:logback-classic:1.2.2"
 }
 
 ext {
@@ -77,5 +77,7 @@ shadowJar {
 }
 
 jar.enabled false
-test.dependsOn flywayClean, flywayMigrate
+test {
+    dependsOn flywayClean, flywayMigrate
+}
 build.dependsOn shadowJar
