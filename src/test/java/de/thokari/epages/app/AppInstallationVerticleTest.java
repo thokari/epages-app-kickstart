@@ -84,12 +84,19 @@ public class AppInstallationVerticleTest {
     }
 
     @After
-    public void stopApiMockAndDatabase() {
-        apiMock.close();
-        dbClient.close();
+    public void stopApiMockAndDatabase(TestContext context) {
+        Async async = context.async();
+        Future<Void> apiMockClosed = Future.future();
+        Future<Void> dbClientClosed = Future.future();
+        apiMock.close(apiMockClosed);
+        dbClient.close(dbClientClosed);
+        CompositeFuture.all(apiMockClosed, dbClientClosed).setHandler(closed -> {
+            async.complete();
+        });
+        async.awaitSuccess(1000);
     }
 
-    @Test(timeout = 2000)
+    @Test
     public void testAppInstallationOauthDance(TestContext context) {
         Async async = context.async();
 
@@ -134,21 +141,20 @@ public class AppInstallationVerticleTest {
                                     if (result.failed()) {
                                         result.cause().printStackTrace();
                                         context.fail();
-                                        async.complete();
                                     }
                                     context.assertEquals(tokenResponse.getString("access_token"),
                                         result.result().getResults().get(0).getValue(0));
                                     context.assertEquals(1, result.result().getNumRows());
                                     async.complete();
-
                                 });
                         });
                     });
             });
         });
+        async.awaitSuccess(2000);
     }
 
-    @Test(timeout = 2000)
+    @Test
     public void testDatabaseConnectionError(TestContext context) {
         Async async = context.async();
 
@@ -190,9 +196,10 @@ public class AppInstallationVerticleTest {
                     });
             });
         });
+        async.awaitSuccess(2000);
     }
 
-    @Test(timeout = 2000)
+    @Test
     public void testTokenError(TestContext context) {
         Async async = context.async();
 
@@ -233,5 +240,6 @@ public class AppInstallationVerticleTest {
                     });
             });
         });
+        async.awaitSuccess(2000);
     }
 }

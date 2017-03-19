@@ -5,9 +5,6 @@ import static de.thokari.epages.app.JsonUtils.serverErrorReply;
 
 import java.net.MalformedURLException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import de.thokari.epages.app.model.AppConfig;
 import de.thokari.epages.app.model.Installation;
 import de.thokari.epages.app.model.InstallationRequest;
@@ -18,6 +15,8 @@ import io.vertx.core.Handler;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.asyncsql.AsyncSQLClient;
 import io.vertx.ext.asyncsql.PostgreSQLClient;
 import io.vertx.ext.auth.oauth2.AccessToken;

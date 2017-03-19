@@ -29,17 +29,20 @@ dependencies {
     compile "io.vertx:vertx-mysql-postgresql-client:${vertxVersion}"
     compile "io.vertx:vertx-auth-oauth2:${vertxVersion}"
     compile 'org.flywaydb:flyway-core:4.1.2'
-
+    
     testCompile "junit:junit:4.12"
     testCompile "io.vertx:vertx-unit:${vertxVersion}"
     testCompile 'com.github.stefanbirkner:system-rules:1.16.0'
 
-    runtime "ch.qos.logback:logback-classic:1.2.2"
+    runtime 'ch.qos.logback:logback-classic:1.2.2'
 }
 
 ext {
     configFile = file 'config.test.json'
     databaseConfig = new groovy.json.JsonSlurper().parse(configFile).database
+    vertxLoggingSystemProperties = [
+        "vertx.logger-delegate-factory-class-name": "io.vertx.core.logging.SLF4JLogDelegateFactory"
+    ]
 }
 
 def mainVerticleName = 'de.thokari.epages.app.EpagesAppMainVerticle'
@@ -58,6 +61,7 @@ run {
         "--redeploy=$watchForChange",
         "--on-redeploy=$doOnChange"
     ]
+    systemProperties = vertxLoggingSystemProperties
 }
 
 flyway {
@@ -79,5 +83,6 @@ shadowJar {
 jar.enabled false
 test {
     dependsOn flywayClean, flywayMigrate
+    systemProperties = vertxLoggingSystemProperties
 }
 build.dependsOn shadowJar

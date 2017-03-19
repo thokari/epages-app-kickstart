@@ -65,8 +65,6 @@ public class EpagesApiClientVerticleTest {
                 context.fail();
                 async.complete();
             }
-            
-            
 
             vertx.deployVerticle(EpagesApiClientVerticle.class.getName(), deploymentOpts, deployed -> {
                 if (deployed.failed()) {
@@ -74,7 +72,9 @@ public class EpagesApiClientVerticleTest {
                     context.fail();
                     async.complete();
                 }
-                
+
+                async.complete();
+
                 vertx.eventBus().<JsonObject>send(
                     EpagesApiClientVerticle.EVENT_BUS_ADDRESS,
                     apiCall,
@@ -85,5 +85,6 @@ public class EpagesApiClientVerticleTest {
                     });
             });
         });
+        async.awaitSuccess(2000);
     }
 }

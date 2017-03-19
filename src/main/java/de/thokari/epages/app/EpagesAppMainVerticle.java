@@ -6,8 +6,12 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 
 public class EpagesAppMainVerticle extends AbstractVerticle {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AppInstallationVerticle.class);
 
     public void start() {
 
@@ -27,8 +31,9 @@ public class EpagesAppMainVerticle extends AbstractVerticle {
             if (deployed.failed()) {
                 throw new RuntimeException("Verticle deployment failed.", deployed.cause());
             } else {
-                System.out.println("App started with config " + config().toString());
+                LOG.info("App started with config " + config().encode());
             }
         });
     }
+
 }
