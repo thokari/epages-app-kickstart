@@ -30,20 +30,24 @@ public class HttpServerVerticle extends AbstractVerticle {
 
             try {
                 event = InstallationRequest.fromMultiMap(ctx.request().params());
+            } catch (IllegalArgumentException e) {
+                response.setStatusCode(400).end(e.getMessage());
+            }
+            
+            if (event != null) {
                 vertx.eventBus().<JsonObject>send(
                     AppInstallationVerticle.EVENT_BUS_ADDRESS, event.toJsonObject(), reply -> {
 
                         JsonObject result = reply.result().body();
                         if ("error".equals(result.getString("status"))) {
-                            response.setStatusCode(500).end(result.getString("message"));
+                            response.setStatusCode(500).end(result.encodePrettily());
                         } else {
                             response.headers().add("Location", appConfig.appStaticPath);
                             response.setStatusCode(302).end();
                         }
                     });
-            } catch (IllegalArgumentException e) {
-                response.setStatusCode(400).end(e.getMessage());
             }
+            
         });
 
         Router apiRouter = Router.router(vertx);

@@ -1,50 +1,89 @@
 package de.thokari.epages.app;
 
+import static de.thokari.epages.app.JsonUtils.*;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
 import io.vertx.core.http.HttpClient;
-import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
+import io.vertx.core.http.RequestOptions;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 
 public class EpagesApiClientVerticle extends AbstractVerticle {
 
     public static final String EVENT_BUS_ADDRESS = "api_client";
-
+    private static final Logger LOG = LoggerFactory.getLogger(AppInstallationVerticle.class);
     private HttpClient client;
 
     public void start() {
 
-        // AppConfig appConfig = Model.fromJsonObject(config(),
-        // AppConfig.class);
-
-        client = vertx.createHttpClient(new HttpClientOptions().setSsl(true).setDefaultPort(443));
+        client = vertx.createHttpClient();
 
         vertx.eventBus().<JsonObject>consumer(EVENT_BUS_ADDRESS).handler(message -> {
             JsonObject payload = message.body();
+
             String action = payload.getString("action");
             String apiUrl = payload.getString("apiUrl");
             String token = payload.getString("token");
+
+            String requestUrl = null;
             switch (action) {
-                case ("shop-info") : {
-                    System.out.println(apiUrl);
-                    client.getNow("devshop.epages.com", "/rs/shops/epagesdevD20161020T212339R164/", response -> {
-                        response.bodyHandler(body -> {
-                            System.out.println(body);
-                            message.reply(body);
-
-                        });
-                    });
-
-                    // request.headers()
-                    // .add("Authorization", "Bearer " + token);
-                    // .add("");
-                    
-
-                }
-
+                case "shop-info" :
+                    requestUrl = apiUrl;
+                    break;
             }
 
+            makeApiRequest(requestUrl, token).otherwise(error -> {
+                String errorMessage = "API request failed";
+                LOG.error(errorMessage, error);
+                return serverErrorReply(errorMessage, error.getMessage());
+            }).setHandler(response -> {
+                message.reply(okReply().put("result", response.result()));
+            });
         });
 
+    }
+
+    @SuppressWarnings("unused")
+    private Future<JsonObject> makeApiRequest(String apiUrl) {
+        return makeApiRequest(apiUrl, null);
+    }
+
+    private Future<JsonObject> makeApiRequest(String apiUrl, String token) {
+        Future<JsonObject> future = Future.future();
+
+        URL url = null;
+        try {
+            url = new URL(apiUrl);
+        } catch (MalformedURLException malformedUrl) {
+            future.fail(malformedUrl);
+        }
+
+        boolean useSsl = "https".equals(url.getProtocol());
+        RequestOptions options = new RequestOptions()
+            .setSsl(useSsl)
+            .setPort(url.getPort() != -1 ? url.getPort() : (useSsl ? 443 : 80))
+            .setHost(url.getHost())
+            .setURI(url.getPath());
+
+        HttpClientRequest request = client.get(options, response -> {
+            response.exceptionHandler(exception -> {
+                future.fail(exception);
+            });
+            response.bodyHandler(body -> {
+                future.complete(body.toJsonObject());
+            });
+        });
+        if (token != null) {
+            request.headers().add("Authorization", "Bearer " + token);
+        }
+        request.end();
+
+        return future;
     }
 }

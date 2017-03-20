@@ -30,12 +30,13 @@ public class EpagesApiClientVerticleTest {
     static AppConfig appConfig;
 
     final String token = "Q9T6g8td0lHzQbIg9CwgRNCrU1SfCko4";
-    final String apiUrl = "devshop.epages.com/rs/shops/epagesdevD20161020T212339R164";
 
     final JsonObject apiCall = new JsonObject()
         .put("action", "shop-info")
         .put("token", token)
-        .put("apiUrl", apiUrl);
+        .put("apiUrl", apiMockUrl);
+    // .put("apiUrl",
+    // "https://devshop.epages.com/rs/shops/epagesdevD20161020T212339R164");
 
     final Vertx vertx = Vertx.vertx();
     final DeploymentOptions deploymentOpts = new DeploymentOptions().setConfig(configJson);
@@ -51,8 +52,14 @@ public class EpagesApiClientVerticleTest {
     @Before
     public void startApiMock() {
         vertx.createHttpServer().requestHandler(request -> {
-            request.response().setStatusCode(404).end();
-        }).listen(apiMockPort, apiMockStarted.completer());
+            if (apiMockUrl.equals(request.absoluteURI())) {
+                request.response()
+                    .setStatusCode(200)
+                    .end(new JsonObject().put("name", "Milestones").encodePrettily());
+            } else {
+                request.response().setStatusCode(404).end();
+            }
+        }).listen(apiMockPort, apiMockStarted);
     }
 
     @Test
@@ -73,14 +80,10 @@ public class EpagesApiClientVerticleTest {
                     async.complete();
                 }
 
-                async.complete();
-
                 vertx.eventBus().<JsonObject>send(
-                    EpagesApiClientVerticle.EVENT_BUS_ADDRESS,
-                    apiCall,
-                    response -> {
+                    EpagesApiClientVerticle.EVENT_BUS_ADDRESS, apiCall, response -> {
                         JsonObject body = response.result().body();
-                        System.out.println(body.encodePrettily());
+                        context.assertEquals("Milestones", body.getJsonObject("result").getString("name"));
                         async.complete();
                     });
             });
