@@ -17,6 +17,7 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.asyncsql.AsyncSQLClient;
@@ -48,6 +49,7 @@ public class AppInstallationVerticleTest {
     static AppConfig appConfig;
     AsyncSQLClient dbClient;
     HttpServer apiMock;
+    MessageConsumer<JsonObject> apiClientMock;
 
     final Vertx vertx = Vertx.vertx();
     final DeploymentOptions deploymentOpts = new DeploymentOptions().setConfig(configJson);
@@ -71,9 +73,8 @@ public class AppInstallationVerticleTest {
     }
 
     @Before
-    public void startApiMock() {
+    public void startMocks() {
         apiMock = vertx.createHttpServer().requestHandler(request -> {
-
             if (request.absoluteURI().equals(apiMockTokenUrl)) {
                 request.response().headers().add("Content-Type", "application/json");
                 request.response().end(tokenResponse.toString());
@@ -81,6 +82,15 @@ public class AppInstallationVerticleTest {
                 request.response().setStatusCode(404).end();
             }
         }).listen(apiMockPort, apiMockStarted);
+        
+         apiClientMock = vertx.eventBus().<JsonObject>consumer(EpagesApiClientVerticle.EVENT_BUS_ADDRESS, message -> {
+            if ("shop-info".equals(message.body().getString("action"))) {
+                message.reply(new JsonObject().put("name", "Milestones"));
+            } else {
+                message.fail(500, "could not get shop info");
+            }
+        });
+        
     }
 
     @After
@@ -88,9 +98,11 @@ public class AppInstallationVerticleTest {
         Async async = context.async();
         Future<Void> apiMockClosed = Future.future();
         Future<Void> dbClientClosed = Future.future();
+        Future<Void> apiClientMockClosed = Future.future();
         apiMock.close(apiMockClosed);
         dbClient.close(dbClientClosed);
-        CompositeFuture.all(apiMockClosed, dbClientClosed).setHandler(closed -> {
+        apiClientMock.unregister(apiClientMockClosed);
+        CompositeFuture.all(apiMockClosed, dbClientClosed, apiClientMockClosed).setHandler(closed -> {
             async.complete();
         });
         async.awaitSuccess(1000);
@@ -122,11 +134,10 @@ public class AppInstallationVerticleTest {
                     AppInstallationVerticle.EVENT_BUS_ADDRESS,
                     installationEvent.toJsonObject(),
                     response -> {
-                        JsonObject body = response.result().body();
 
                         // THEN
-
-                        context.assertEquals("ok", body.getString("status"), body.getString("message"));
+                        context.assertTrue(response.succeeded(), response.cause() != null ? response.cause().getMessage() : null);
+                        context.assertEquals(null, response.result().body());
 
                         dbClient.getConnection(connected -> {
                             if (connected.failed()) {
@@ -184,13 +195,11 @@ public class AppInstallationVerticleTest {
                     AppInstallationVerticle.EVENT_BUS_ADDRESS,
                     installationEvent.toJsonObject(),
                     response -> {
-                        JsonObject body = response.result().body();
-
+                        
                         // THEN
-
-                        context.assertEquals("error", body.getString("status"));
+                        context.assertTrue(response.failed());
                         String expectedMessage = "could not create installation for event";
-                        String actualMessage = body.getString("message").substring(0, expectedMessage.length());
+                        String actualMessage = response.cause().getMessage().substring(0, expectedMessage.length());
                         context.assertEquals(expectedMessage, actualMessage);
                         async.complete();
                     });
@@ -228,13 +237,11 @@ public class AppInstallationVerticleTest {
                     AppInstallationVerticle.EVENT_BUS_ADDRESS,
                     installationEvent.toJsonObject(),
                     response -> {
-                        JsonObject body = response.result().body();
 
                         // THEN
-
-                        context.assertEquals("error", body.getString("status"));
+                        context.assertTrue(response.failed());
                         String expectedMessage = "could not get token for event";
-                        String actualMessage = body.getString("message").substring(0, expectedMessage.length());
+                        String actualMessage = response.cause().getMessage().substring(0, expectedMessage.length());
                         context.assertEquals(expectedMessage, actualMessage);
                         async.complete();
                     });

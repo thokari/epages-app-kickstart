@@ -1,7 +1,5 @@
 package de.thokari.epages.app;
 
-import static de.thokari.epages.app.JsonUtils.*;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 
@@ -38,15 +36,17 @@ public class EpagesApiClientVerticle extends AbstractVerticle {
                     break;
             }
 
-            makeApiRequest(requestUrl, token).otherwise(error -> {
-                String errorMessage = "API request failed";
-                LOG.error(errorMessage, error);
-                return serverErrorReply(errorMessage, error.getMessage());
-            }).setHandler(response -> {
-                message.reply(okReply().put("result", response.result()));
+            makeApiRequest(requestUrl, token).setHandler(response -> {
+                if (response.failed()) {
+                    String errorMessage = "API request failed";
+                    LOG.error(errorMessage, response.cause());
+                    message.fail(500, errorMessage);
+                } else {
+                    message.reply(response.result());
+                }
             });
-        });
 
+        });
     }
 
     @SuppressWarnings("unused")
@@ -72,9 +72,7 @@ public class EpagesApiClientVerticle extends AbstractVerticle {
             .setURI(url.getPath());
 
         HttpClientRequest request = client.get(options, response -> {
-            response.exceptionHandler(exception -> {
-                future.fail(exception);
-            });
+            response.exceptionHandler(exception -> future.fail(exception));
             response.bodyHandler(body -> {
                 future.complete(body.toJsonObject());
             });
@@ -82,6 +80,7 @@ public class EpagesApiClientVerticle extends AbstractVerticle {
         if (token != null) {
             request.headers().add("Authorization", "Bearer " + token);
         }
+        request.exceptionHandler(exception -> future.fail(exception));
         request.end();
 
         return future;

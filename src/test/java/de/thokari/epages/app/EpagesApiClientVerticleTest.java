@@ -14,6 +14,7 @@ import de.thokari.epages.app.model.Model;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.ReplyException;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
@@ -25,6 +26,7 @@ public class EpagesApiClientVerticleTest {
 
     final Integer apiMockPort = 9999;
     final String apiMockUrl = "http://localhost:" + apiMockPort + "/api";
+    HttpServer apiMock;
 
     static JsonObject configJson;
     static AppConfig appConfig;
@@ -51,7 +53,7 @@ public class EpagesApiClientVerticleTest {
 
     @Before
     public void startApiMock() {
-        vertx.createHttpServer().requestHandler(request -> {
+        apiMock = vertx.createHttpServer().requestHandler(request -> {
             if (apiMockUrl.equals(request.absoluteURI())) {
                 request.response()
                     .setStatusCode(200)
@@ -60,6 +62,39 @@ public class EpagesApiClientVerticleTest {
                 request.response().setStatusCode(404).end();
             }
         }).listen(apiMockPort, apiMockStarted);
+    }
+
+    @Test
+    public void testApiCallFailed(TestContext context) {
+        Async async = context.async();
+
+        apiMockStarted.setHandler(started -> {
+            if (apiMockStarted.failed()) {
+                apiMockStarted.cause().printStackTrace();
+                context.fail();
+                async.complete();
+            }
+
+            apiMock.close(closed -> {
+
+                vertx.deployVerticle(EpagesApiClientVerticle.class.getName(), deploymentOpts, deployed -> {
+                    if (deployed.failed()) {
+                        deployed.cause().printStackTrace();
+                        context.fail();
+                        async.complete();
+                    }
+
+                    vertx.eventBus().<JsonObject>send(
+                        EpagesApiClientVerticle.EVENT_BUS_ADDRESS, apiCall, response -> {
+                            context.assertTrue(response.failed());
+                            context.assertEquals("API request failed", response.cause().getMessage());
+                            context.assertEquals(500, ((ReplyException) response.cause()).failureCode());
+                            async.complete();
+                        });
+                });
+            });
+        });
+        async.awaitSuccess(2000);
     }
 
     @Test
@@ -82,8 +117,9 @@ public class EpagesApiClientVerticleTest {
 
                 vertx.eventBus().<JsonObject>send(
                     EpagesApiClientVerticle.EVENT_BUS_ADDRESS, apiCall, response -> {
+                        context.assertTrue(response.succeeded());
                         JsonObject body = response.result().body();
-                        context.assertEquals("Milestones", body.getJsonObject("result").getString("name"));
+                        context.assertEquals("Milestones", body.getString("name"));
                         async.complete();
                     });
             });

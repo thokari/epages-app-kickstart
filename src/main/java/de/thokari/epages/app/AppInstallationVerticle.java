@@ -1,8 +1,5 @@
 package de.thokari.epages.app;
 
-import static de.thokari.epages.app.JsonUtils.okReply;
-import static de.thokari.epages.app.JsonUtils.serverErrorReply;
-
 import java.net.MalformedURLException;
 
 import de.thokari.epages.app.model.AppConfig;
@@ -51,24 +48,35 @@ public class AppInstallationVerticle extends AbstractVerticle {
                 .setClientID(clientId).setClientSecret(clientSecret)
                 .setSite(event.apiUrl).setTokenPath(event.tokenPath);
 
-            requestOAuth2Token(credentials, event.code, event.returnUrl)
+            requestOAuth2Token(credentials, event.code, event.returnUrl).setHandler(tokenResponse -> {
 
-                .compose(tokenResult -> {
-                    return createInstallation(tokenResult, event).otherwise(installationError -> {
-                        String errorMsg = String.format("could not create installation for event %s", event.toString());
-                        LOG.error(errorMsg);
-                        return serverErrorReply(errorMsg, installationError.getMessage());
-                    });
-                })
-
-                .otherwise(tokenError -> {
+                if (tokenResponse.failed()) {
                     String errorMsg = String.format("could not get token for event %s", event.toString());
                     LOG.error(errorMsg);
-                    return serverErrorReply(errorMsg, tokenError.getMessage());
-                })
-                
-                .setHandler(
-                    installationResult -> message.reply(installationResult.result()));
+                    message.fail(500, errorMsg);
+                } else {
+                    AccessToken token = tokenResponse.result();
+                    String accessToken = token.principal().getString("access_token");
+                    getShopInfo(accessToken, event.apiUrl).setHandler(shopInfo -> {
+                        if (shopInfo.failed()) {
+                            String errorMsg = String.format("could not get shop info for event %s", event.toString());
+                            LOG.error(errorMsg);
+                            message.fail(500, errorMsg);
+                        } else {
+                            createInstallation(accessToken, shopInfo.result(), event).setHandler(installationResult -> {
+                                if (installationResult.failed()) {
+                                    String errorMsg = String.format("could not create installation for event %s",
+                                        event.toString());
+                                    LOG.error(errorMsg);
+                                    message.fail(500, errorMsg);
+                                } else {
+                                    message.reply(installationResult.result());
+                                }
+                            });
+                        }
+                    });
+                }
+            });
         };
     };
 
@@ -82,14 +90,31 @@ public class AppInstallationVerticle extends AbstractVerticle {
         return future;
     }
 
-    private Future<JsonObject> createInstallation(AccessToken token, InstallationRequest event) {
+    private Future<JsonObject> createInstallation(String accessToken, JsonObject shopInfo, InstallationRequest event) {
         Future<JsonObject> future = Future.future();
 
-        String accessToken = token.principal().getString("access_token");
         // TODO shop name etc.
         Installation installation = new Installation("Milestones", event.apiUrl, accessToken);
-        
+
         saveInstallation(installation).setHandler(future);
+        return future;
+    }
+
+    private Future<JsonObject> getShopInfo(String accessToken, String apiUrl) {
+        Future<JsonObject> future = Future.future();
+
+        JsonObject message = new JsonObject()
+            .put("action", "shop-info")
+            .put("apiUrl", apiUrl)
+            .put("accessToken", accessToken);
+
+        vertx.eventBus().<JsonObject>send(EpagesApiClientVerticle.EVENT_BUS_ADDRESS, message, response -> {
+            if (response.failed()) {
+                future.fail(response.cause().getMessage());
+            } else {
+                future.complete(response.result().body());
+            }
+        });
         return future;
     }
 
@@ -110,7 +135,7 @@ public class AppInstallationVerticle extends AbstractVerticle {
                         future.fail(queryResult.cause().getMessage());
                     } else {
                         LOG.info(String.format("installation %s saved", installation.toJsonObject().toString()));
-                        future.complete(okReply());
+                        future.complete();
                     }
                     connection.close();
                 });
