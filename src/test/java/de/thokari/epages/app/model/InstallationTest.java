@@ -1,6 +1,6 @@
 package de.thokari.epages.app.model;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,13 +21,15 @@ public class InstallationTest {
         Installation installation = new Installation(shopName, apiUrl, accessToken);
         String query = installation.getInsertQuery();
 
-        assertEquals("INSERT INTO installations (api_url, access_token, shop_name, email_confirmed, created) VALUES (?, ?, ?, ?, ?)", query);
+        assertEquals(
+            "INSERT INTO installations (api_url, access_token, shop_name, email_confirmed, created) VALUES (?, ?, ?, ?, ?)",
+            query);
     }
 
     @Test
     public void testGetQueryParams() {
         Installation installation = new Installation(shopName, apiUrl, accessToken);
-        
+
         JsonArray expected = new JsonArray()
             .add(apiUrl)
             .add(accessToken)
@@ -36,7 +38,7 @@ public class InstallationTest {
 
         JsonArray actual = installation.getInsertQueryParams();
         actual.remove(4);
-        
+
         assertEquals(expected, actual);
     }
 

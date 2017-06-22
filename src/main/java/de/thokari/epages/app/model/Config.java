@@ -13,5 +13,5 @@ public abstract class Config extends Model {
     protected static String overrideFromEnv(final String envVar, final String value) {
         return overrideFromEnv(envVar, value, String.class);
     }
-    
+
 }

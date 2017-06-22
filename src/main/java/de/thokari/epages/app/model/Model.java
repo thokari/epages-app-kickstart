@@ -20,7 +20,7 @@ public abstract class Model {
             return (T) value;
         }
     }
-    
+
     public String toString() {
         return Json.encode(this);
     }

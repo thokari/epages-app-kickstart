@@ -33,7 +33,7 @@ public class HttpServerVerticle extends AbstractVerticle {
             } catch (IllegalArgumentException e) {
                 response.setStatusCode(400).end(e.getMessage());
             }
-            
+
             if (event != null) {
                 vertx.eventBus().<JsonObject>send(
                     AppInstallationVerticle.EVENT_BUS_ADDRESS, event.toJsonObject(), reply -> {
@@ -47,7 +47,7 @@ public class HttpServerVerticle extends AbstractVerticle {
                         }
                     });
             }
-            
+
         });
 
         Router apiRouter = Router.router(vertx);

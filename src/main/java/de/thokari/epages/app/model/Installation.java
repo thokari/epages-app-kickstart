@@ -43,8 +43,6 @@ public class Installation extends Model {
 
         this.created = new Timestamp(new Date().getTime()).toInstant().toString();
     }
-    
-    
 
     @JsonIgnore
     public String getInsertQuery() {

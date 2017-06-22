@@ -6,19 +6,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class DatabaseConfig extends Config {
 
     public String host;
-    
+
     public Integer port;
-    
+
     public String username;
-    
+
     public String password;
-    
+
     public String database;
-    
+
     public String charset;
-    
+
     public Integer maxPoolSize;
-    
+
     public Integer queryTimeout;
 
     @JsonCreator

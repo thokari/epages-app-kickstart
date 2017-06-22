@@ -6,19 +6,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class AppConfig extends Config {
 
     public String clientId;
-    
+
     public String clientSecret;
-    
+
     public String appProtocol;
-    
+
     public String appHostname;
-    
+
     public Integer appPort;
-    
+
     public String appStaticPath;
-    
+
     public String appApiPath;
-    
+
     public String callbackPath;
 
     public DatabaseConfig database;

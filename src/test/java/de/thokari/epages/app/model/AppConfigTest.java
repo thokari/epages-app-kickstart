@@ -50,7 +50,8 @@ public class AppConfigTest {
         assertEquals("db-user-from-env", appConfig.database.username);
     }
 
-    @Test(expected = DecodeException.class)
+    @Test(
+        expected = DecodeException.class)
     public void testMissingAttributeThrowsException() {
         JsonObject modified = configJson.copy();
         modified.remove("clientId");
