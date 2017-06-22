@@ -42,41 +42,52 @@ public class AppInstallationVerticle extends AbstractVerticle {
         return message -> {
             InstallationRequest event = Model.fromJsonObject(message.body(), InstallationRequest.class);
 
-            LOG.info("received installation event " + event.toString());
+            if (!event.hasValidSignature(clientSecret)) {
+                String errorMsg = "Received installation request with invalid signature: " + event.toString();
+                LOG.error(errorMsg);
+                message.fail(400, errorMsg);
+            } else {
 
-            OAuth2ClientOptions credentials = new OAuth2ClientOptions()
-                .setClientID(clientId).setClientSecret(clientSecret)
-                .setSite(event.apiUrl).setTokenPath(event.tokenPath);
+                LOG.info("received installation event " + event.toString());
 
-            requestOAuth2Token(credentials, event.code, event.returnUrl).setHandler(tokenResponse -> {
+                OAuth2ClientOptions credentials = new OAuth2ClientOptions()
+                    .setClientID(clientId).setClientSecret(clientSecret)
+                    .setSite(event.apiUrl).setTokenPath(event.tokenPath);
 
-                if (tokenResponse.failed()) {
-                    String errorMsg = String.format("could not get token for event %s", event.toString());
-                    LOG.error(errorMsg);
-                    message.fail(500, errorMsg);
-                } else {
-                    AccessToken token = tokenResponse.result();
-                    String accessToken = token.principal().getString("access_token");
-                    getShopInfo(accessToken, event.apiUrl).setHandler(shopInfo -> {
-                        if (shopInfo.failed()) {
-                            String errorMsg = String.format("could not get shop info for event %s", event.toString());
-                            LOG.error(errorMsg);
-                            message.fail(500, errorMsg);
-                        } else {
-                            createInstallation(accessToken, shopInfo.result(), event).setHandler(installationResult -> {
-                                if (installationResult.failed()) {
-                                    String errorMsg = String.format("could not create installation for event %s",
-                                        event.toString());
-                                    LOG.error(errorMsg);
-                                    message.fail(500, errorMsg);
-                                } else {
-                                    message.reply(installationResult.result());
-                                }
-                            });
-                        }
-                    });
-                }
-            });
+                requestOAuth2Token(credentials, event.code, event.returnUrl).setHandler(tokenResponse -> {
+
+                    if (tokenResponse.failed()) {
+                        String errorMsg = String.format("could not get token for event %s", event.toString());
+                        LOG.error(errorMsg);
+                        message.fail(500, errorMsg);
+                    } else {
+                        AccessToken token = tokenResponse.result();
+                        String accessToken = token.principal().getString("access_token");
+                        getShopInfo(accessToken, event.apiUrl).setHandler(shopInfo -> {
+                            if (shopInfo.failed()) {
+                                String errorMsg = String.format("could not get shop info for event %s",
+                                    event.toString());
+                                LOG.error(errorMsg);
+                                message.fail(500, errorMsg);
+                            } else {
+                                Future<JsonObject> installationCompleted = createInstallation(accessToken,
+                                    shopInfo.result(), event);
+                                installationCompleted.setHandler(installationResult -> {
+                                    if (installationResult.failed()) {
+                                        String errorMsg = String.format(
+                                            "could not create installation for event %s",
+                                            event.toString());
+                                        LOG.error(errorMsg);
+                                        message.fail(500, errorMsg);
+                                    } else {
+                                        message.reply(installationResult.result());
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            }
         };
     };
 

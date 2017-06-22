@@ -33,13 +33,14 @@ public class AppInstallationVerticleTest {
     final String apiMockUrl = "http://localhost:" + apiMockPort + "/api";
     final String apiMockTokenUrl = apiMockUrl + "/token";
 
-    final JsonObject installationEventSource = new JsonObject()
+    final JsonObject installationRequestSource = new JsonObject()
         .put("code", "f32ddSbuff2IGAYvtiwYQiyHyuLJWbey")
         .put("api_url", apiMockUrl)
         .put("access_token_url", apiMockTokenUrl)
-        .put("return_url", "http://localhost:8080/epages-app");
+        .put("return_url", "http://localhost:8080/epages-app")
+        .put("signature", "khbDPOK6OWAk4u+XGOkcy6b30LanJc6Y+Q2AHnFtxu8=");
 
-    final InstallationRequest installationEvent = Model.fromJsonObject(installationEventSource,
+    final InstallationRequest installationEvent = Model.fromJsonObject(installationRequestSource,
         InstallationRequest.class);
 
     final JsonObject tokenResponse = new JsonObject()
@@ -82,15 +83,15 @@ public class AppInstallationVerticleTest {
                 request.response().setStatusCode(404).end();
             }
         }).listen(apiMockPort, apiMockStarted);
-        
-         apiClientMock = vertx.eventBus().<JsonObject>consumer(EpagesApiClientVerticle.EVENT_BUS_ADDRESS, message -> {
+
+        apiClientMock = vertx.eventBus().<JsonObject>consumer(EpagesApiClientVerticle.EVENT_BUS_ADDRESS, message -> {
             if ("shop-info".equals(message.body().getString("action"))) {
                 message.reply(new JsonObject().put("name", "Milestones"));
             } else {
                 message.fail(500, "could not get shop info");
             }
         });
-        
+
     }
 
     @After
@@ -136,7 +137,8 @@ public class AppInstallationVerticleTest {
                     response -> {
 
                         // THEN
-                        context.assertTrue(response.succeeded(), response.cause() != null ? response.cause().getMessage() : null);
+                        context.assertTrue(response.succeeded(),
+                            response.cause() != null ? response.cause().getMessage() : null);
                         context.assertEquals(null, response.result().body());
 
                         dbClient.getConnection(connected -> {
@@ -195,7 +197,7 @@ public class AppInstallationVerticleTest {
                     AppInstallationVerticle.EVENT_BUS_ADDRESS,
                     installationEvent.toJsonObject(),
                     response -> {
-                        
+
                         // THEN
                         context.assertTrue(response.failed());
                         String expectedMessage = "could not create installation for event";

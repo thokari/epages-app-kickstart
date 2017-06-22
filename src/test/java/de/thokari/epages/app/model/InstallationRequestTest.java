@@ -1,7 +1,12 @@
 package de.thokari.epages.app.model;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
+import java.io.UnsupportedEncodingException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -15,19 +20,40 @@ public class InstallationRequestTest {
         .put("code", "f32ddSbuff2IGAYvtiwYQiyHyuLJWbey")
         .put("api_url", "http://localhost:9999/api")
         .put("access_token_url", "http://localhost:9999/api/token")
-        .put("return_url", "http://localhost:8080/epages-app");
+        .put("return_url", "http://localhost:8080/epages-app")
+        .put("signature", "khbDPOK6OWAk4u+XGOkcy6b30LanJc6Y+Q2AHnFtxu8=");
 
-    final InstallationRequest installationEvent = Model.fromJsonObject(source, InstallationRequest.class);
-
+    InstallationRequest installationRequest;
+    
+    @Before
+    public void setup() {
+        installationRequest = Model.fromJsonObject(source, InstallationRequest.class);
+    }
+    
     @Test
     public void testCalculatesCorrectTokenPath() {
-        assertEquals("/token", installationEvent.tokenPath);
+        assertEquals("/token", installationRequest.tokenPath);
     }
 
     @Test
     public void testCanBeSerialized() {
-        JsonObject expected = source.put("token_path", "/token");
-        assertEquals(expected.encode(), installationEvent.toJsonObject().encode());
+        source.put("token_path", "/token");
+        assertEquals(source.encode(), installationRequest.toJsonObject().encode());
+    }
+    
+    @Test
+    public void testValidatesCorrectSignature() throws InvalidKeyException, UnsupportedEncodingException, NoSuchAlgorithmException {
+        String secret = "my-client-secret";
+        installationRequest = Model.fromJsonObject(source, InstallationRequest.class);
+        assertTrue(installationRequest.hasValidSignature(secret));
+    }
+    
+    @Test
+    public void testFailsOnWrongSignature() throws InvalidKeyException, UnsupportedEncodingException, NoSuchAlgorithmException {
+        String secret = "my-client-secret";
+        source.put("signature", "invalid_signature");
+        installationRequest = Model.fromJsonObject(source, InstallationRequest.class);
+        assertFalse(installationRequest.hasValidSignature(secret));
     }
     
 }
