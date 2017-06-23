@@ -8,6 +8,7 @@ import de.thokari.epages.app.model.AppConfig;
 import de.thokari.epages.app.model.InstallationRequest;
 import de.thokari.epages.app.model.Model;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.eventbus.ReplyException;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerResponse;
@@ -38,9 +39,11 @@ public class HttpServerVerticle extends AbstractVerticle {
                 vertx.eventBus().<JsonObject>send(
                     AppInstallationVerticle.EVENT_BUS_ADDRESS, event.toJsonObject(), reply -> {
 
-                        JsonObject result = reply.result().body();
-                        if ("error".equals(result.getString("status"))) {
-                            response.setStatusCode(500).end(result.encodePrettily());
+                        if (reply.failed()) {
+                            ReplyException error = (ReplyException) reply.cause();
+                            String errorMsg = error.getMessage();
+                            int statusCode = error.failureCode();
+                            response.setStatusCode(statusCode).end(errorMsg);
                         } else {
                             response.headers().add("Location", appConfig.appStaticPath);
                             response.setStatusCode(302).end();

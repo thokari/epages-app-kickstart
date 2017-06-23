@@ -38,7 +38,8 @@ dependencies {
 }
 
 ext {
-    configFile = file 'config.test.json'
+    configFileName = project.hasProperty('configFileName') ? project.getProperty('configFileName') : 'config.test.json'
+    configFile = file configFileName
     databaseConfig = new groovy.json.JsonSlurper().parse(configFile).database
     vertxLoggingSystemProperties = [
         "vertx.logger-delegate-factory-class-name": "io.vertx.core.logging.SLF4JLogDelegateFactory"
@@ -62,6 +63,9 @@ run {
         "--on-redeploy=$doOnChange"
     ]
     systemProperties = vertxLoggingSystemProperties
+    doFirst {
+        println "Using arguments: ${args}"
+    }
 }
 
 flyway {

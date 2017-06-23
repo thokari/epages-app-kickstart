@@ -31,7 +31,7 @@ public class EpagesAppMainVerticle extends AbstractVerticle {
             if (deployed.failed()) {
                 throw new RuntimeException("Verticle deployment failed.", deployed.cause());
             } else {
-                LOG.info("App started with config " + config().encode());
+                LOG.info("App started with config " + appConfig.toJsonObject().encode());
             }
         });
     }

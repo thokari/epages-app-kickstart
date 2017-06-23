@@ -42,7 +42,6 @@ public class InstallationRequestTest {
     @Test
     public void testValidatesCorrectSignature() {
         String secret = "my-client-secret";
-        installationRequest = Model.fromJsonObject(source, InstallationRequest.class);
         assertTrue(installationRequest.hasValidSignature(secret));
     }
 

@@ -57,7 +57,7 @@ public class AppInstallationVerticle extends AbstractVerticle {
                 requestOAuth2Token(credentials, event.code, event.returnUrl).setHandler(tokenResponse -> {
 
                     if (tokenResponse.failed()) {
-                        String errorMsg = String.format("could not get token for event %s", event.toString());
+                        String errorMsg = String.format("could not get token for event %s because of %s", event.toString(), tokenResponse.cause());
                         LOG.error(errorMsg);
                         message.fail(500, errorMsg);
                     } else {
