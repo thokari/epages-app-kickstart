@@ -7,11 +7,10 @@
     </appender>
 
     <root level="INFO">
-       <appender-ref ref="STDOUT" />
+        <appender-ref ref="STDOUT" />
     </root>
 
-    <logger name="de.thokari" level="DEBUG" additivity="false">
-        <appender-ref ref="STDOUT" />
-    </logger>
+    <!-- TODO Does not work like this for unknown reasons -->
+    <logger name="de.thokari.epages.app" level="DEBUG" additivity="false" />
 
 </configuration>

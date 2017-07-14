@@ -57,16 +57,18 @@ public class AppInstallationVerticle extends AbstractVerticle {
                 requestOAuth2Token(credentials, event.code, event.returnUrl).setHandler(tokenResponse -> {
 
                     if (tokenResponse.failed()) {
-                        String errorMsg = String.format("could not get token for event %s because of %s", event.toString(), tokenResponse.cause());
+                        String errorMsg = String.format("could not get token for event %s because of %s",
+                            event.toString(), tokenResponse.cause());
                         LOG.error(errorMsg);
                         message.fail(500, errorMsg);
                     } else {
                         AccessToken token = tokenResponse.result();
                         String accessToken = token.principal().getString("access_token");
+                        LOG.info(String.format("obtained access token %s for API URL %s", accessToken, event.apiUrl));
                         getShopInfo(accessToken, event.apiUrl).setHandler(shopInfo -> {
                             if (shopInfo.failed()) {
-                                String errorMsg = String.format("could not get shop info for event %s",
-                                    event.toString());
+                                String errorMsg = String.format("could not get shop info for event %s because of %s",
+                                    event.toString(), shopInfo.cause());
                                 LOG.error(errorMsg);
                                 message.fail(500, errorMsg);
                             } else {
@@ -75,8 +77,8 @@ public class AppInstallationVerticle extends AbstractVerticle {
                                 installationCompleted.setHandler(installationResult -> {
                                     if (installationResult.failed()) {
                                         String errorMsg = String.format(
-                                            "could not create installation for event %s",
-                                            event.toString());
+                                            "could not create installation for event %s because of %s",
+                                            event.toString(), installationResult.cause());
                                         LOG.error(errorMsg);
                                         message.fail(500, errorMsg);
                                     } else {

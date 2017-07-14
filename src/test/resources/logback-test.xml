@@ -6,12 +6,10 @@
         </encoder>
     </appender>
 
-    <root level="INFO">
-       <appender-ref ref="STDOUT" />
+    <root level="DEBUG">
+        <appender-ref ref="STDOUT" />
     </root>
 
-    <logger name="de.thokari" level="DEBUG" additivity="false">
-        <appender-ref ref="STDOUT" />
-    </logger>
+    <logger name="de.thokari.epages.app" level="DEBUG" additivity="false" />
 
 </configuration>

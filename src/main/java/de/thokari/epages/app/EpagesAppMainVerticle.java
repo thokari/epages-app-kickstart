@@ -11,29 +11,32 @@ import io.vertx.core.logging.LoggerFactory;
 
 public class EpagesAppMainVerticle extends AbstractVerticle {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AppInstallationVerticle.class);
+    private static final Logger LOG = LoggerFactory.getLogger(EpagesAppMainVerticle.class);
 
     public void start() {
-
         AppConfig appConfig = Model.fromJsonObject(config(), AppConfig.class);
 
         DeploymentOptions deploymentOpts = new DeploymentOptions().setConfig(appConfig.toJsonObject());
 
         Future<String> appInstallationDeployed = Future.future();
+        Future<String> epagesApiClientDeployed = Future.future();
         Future<String> httpServerDeployed = Future.future();
 
         vertx.deployVerticle(
             AppInstallationVerticle.class.getName(), deploymentOpts, appInstallationDeployed.completer());
         vertx.deployVerticle(
             HttpServerVerticle.class.getName(), deploymentOpts, httpServerDeployed.completer());
+        vertx.deployVerticle(
+            EpagesApiClientVerticle.class.getName(), deploymentOpts, epagesApiClientDeployed.completer());
 
-        CompositeFuture.all(appInstallationDeployed, httpServerDeployed).setHandler(deployed -> {
-            if (deployed.failed()) {
-                throw new RuntimeException("Verticle deployment failed.", deployed.cause());
-            } else {
-                LOG.info("App started with config " + appConfig.toJsonObject().encode());
-            }
-        });
+        CompositeFuture.all(appInstallationDeployed, httpServerDeployed, epagesApiClientDeployed)
+            .setHandler(deployed -> {
+                if (deployed.failed()) {
+                    throw new RuntimeException("Verticle deployment failed.", deployed.cause());
+                } else {
+                    LOG.info("App started with config " + appConfig.toJsonObject().encode());
+                }
+            });
     }
 
 }
