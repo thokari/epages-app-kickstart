@@ -107,7 +107,7 @@ public class AppInstallationVerticle extends AbstractVerticle {
         Future<JsonObject> future = Future.future();
 
         // TODO shop name etc.
-        Installation installation = new Installation("Milestones", event.apiUrl, accessToken);
+        Installation installation = new Installation(event.apiUrl, accessToken, "Milestones");
 
         saveInstallation(installation).setHandler(future);
         return future;

@@ -35,13 +35,23 @@ public class Installation extends Model {
     public String created;
 
     @JsonCreator
-    public Installation(String shopName, String apiUrl, String accessToken) {
+    public Installation(@JsonProperty("api_url") String apiUrl, @JsonProperty("access_token") String accessToken,
+        @JsonProperty("shop_name") String shopName, @JsonProperty("email") String email,
+        @JsonProperty("email_confirmed") Boolean emailConfirmed,
+        @JsonProperty("created") String created) {
 
-        this.shopName = shopName;
         this.apiUrl = apiUrl;
         this.accessToken = accessToken;
+        this.shopName = shopName;
+        this.email = email;
+        this.emailConfirmed = emailConfirmed;
+        if (created != null) {
+            this.created = new Timestamp(new Date().getTime()).toInstant().toString();
+        }
+    }
 
-        this.created = new Timestamp(new Date().getTime()).toInstant().toString();
+    public Installation(String apiUrl, String accessToken, String shopName) {
+        this(apiUrl, accessToken, shopName, null, null, null);
     }
 
     @JsonIgnore

@@ -15,7 +15,7 @@ import io.vertx.core.logging.LoggerFactory;
 public class EpagesApiClientVerticle extends AbstractVerticle {
 
     public static final String EVENT_BUS_ADDRESS = "api_client";
-    private static final Logger LOG = LoggerFactory.getLogger(AppInstallationVerticle.class);
+    private static final Logger LOG = LoggerFactory.getLogger(EpagesApiClientVerticle.class);
     private HttpClient client;
 
     public void start() {
@@ -34,18 +34,25 @@ public class EpagesApiClientVerticle extends AbstractVerticle {
                 case "shop-info" :
                     requestUrl = apiUrl;
                     break;
+                case "singlesignon" :
+                    requestUrl = apiUrl + "/singlesignon";
+                    break;
             }
 
-            makeApiRequest(requestUrl, token).setHandler(response -> {
+            final String finalRequestUrl = requestUrl;
+
+            LOG.info(String.format("Requesting API at '%s'", finalRequestUrl));
+
+            makeApiRequest(finalRequestUrl, token).setHandler(response -> {
                 if (response.failed()) {
-                    String errorMessage = "API request failed";
-                    LOG.error(errorMessage, response.cause());
-                    message.fail(500, errorMessage);
+                    String errorMsg = String.format("API request to '%s' failed because of '%s'", finalRequestUrl,
+                        response.cause().getMessage());
+                    LOG.error(errorMsg);
+                    message.fail(500, errorMsg);
                 } else {
                     message.reply(response.result());
                 }
             });
-
         });
     }
 
@@ -73,8 +80,14 @@ public class EpagesApiClientVerticle extends AbstractVerticle {
 
         HttpClientRequest request = client.get(options, response -> {
             response.exceptionHandler(exception -> future.fail(exception));
+            Boolean responseIsOk = String.valueOf(response.statusCode()).startsWith("2")
+                || String.valueOf(response.statusCode()).startsWith("3");
             response.bodyHandler(body -> {
-                future.complete(body.toJsonObject());
+                if (responseIsOk) {
+                    future.complete(body.toJsonObject());
+                } else {
+                    future.fail(body.toString());
+                }
             });
         });
         if (token != null) {
