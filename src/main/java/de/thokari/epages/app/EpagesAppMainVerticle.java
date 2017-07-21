@@ -22,6 +22,7 @@ public class EpagesAppMainVerticle extends AbstractVerticle {
         Future<String> epagesApiClientDeployed = Future.future();
         Future<String> httpServerDeployed = Future.future();
         Future<String> ssoLoginVerticleDeployed = Future.future();
+        Future<String> ssoShopCreationVerticleDeployed = Future.future();
 
         vertx.deployVerticle(
             AppInstallationVerticle.class.getName(), deploymentOpts, appInstallationDeployed.completer());
@@ -30,6 +31,8 @@ public class EpagesAppMainVerticle extends AbstractVerticle {
         vertx.deployVerticle(
             EpagesApiClientVerticle.class.getName(), deploymentOpts, epagesApiClientDeployed.completer());
         vertx.deployVerticle(
+            SsoShopCreationVerticle.class.getName(), deploymentOpts, ssoShopCreationVerticleDeployed.completer());
+        vertx.deployVerticle(
             SsoLoginVerticle.class.getName(), deploymentOpts, ssoLoginVerticleDeployed.completer());
 
         CompositeFuture
@@ -37,6 +40,7 @@ public class EpagesAppMainVerticle extends AbstractVerticle {
                 appInstallationDeployed, //
                 httpServerDeployed, //
                 epagesApiClientDeployed, //
+                ssoShopCreationVerticleDeployed, //
                 ssoLoginVerticleDeployed)
             .setHandler(deployed -> {
                 if (deployed.failed()) {

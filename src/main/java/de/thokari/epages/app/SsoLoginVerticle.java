@@ -27,42 +27,38 @@ public class SsoLoginVerticle extends AbstractVerticle {
         AppConfig appConfig = Model.fromJsonObject(config(), AppConfig.class);
         dbClient = PostgreSQLClient.createShared(vertx, appConfig.database.toJsonObject());
 
-        vertx.eventBus().<String>consumer(EVENT_BUS_ADDRESS).handler(handleLoginEvent());
+        vertx.eventBus().<String>consumer(EVENT_BUS_ADDRESS).handler(handleLoginEvent);
     }
 
-    private Handler<Message<String>> handleLoginEvent() {
-        return message -> {
+    private Handler<Message<String>> handleLoginEvent = message -> {
 
-            String shopPublicId = message.body();
-            LOG.info(String.format("received login request for shop '%s'", shopPublicId));
+        String shopPublicId = message.body();
+        LOG.info(String.format("received login request for shop '%s'", shopPublicId));
 
-            getInstallationFromDb(shopPublicId).setHandler(result -> {
-                if (result.succeeded()) {
-                    Installation installation = result.result();
+        getInstallationFromDb(shopPublicId).setHandler(result -> {
+            if (result.succeeded()) {
+                Installation installation = result.result();
 
-                    JsonObject apiRequestData = new JsonObject() //
-                        .put("action", "singlesignon") //
-                        .put("apiUrl", installation.apiUrl) //
-                        .put("token", installation.accessToken);
+                JsonObject apiRequestData = new JsonObject() //
+                    .put("action", "singlesignon") //
+                    .put("apiUrl", installation.apiUrl) //
+                    .put("token", installation.accessToken);
 
-                    vertx.eventBus().<JsonObject>send(EpagesApiClientVerticle.EVENT_BUS_ADDRESS, apiRequestData,
-                        reply -> {
-                            if (reply.succeeded()) {
-                                // TODO here we are stuck for obvious reasons
-                                System.out.println("Request cannot succeed...");
-                                message.reply(reply.result().body().getString("ssourl"));
-                            } else {
-                                ReplyException error = (ReplyException) reply.cause();
-                                message.fail(error.failureCode(), error.getMessage());
-                            }
-                        });
-                } else {
-                    String errorMsg = result.cause().getMessage();
-                    LOG.error(errorMsg);
-                    message.fail(500, errorMsg);
-                }
-            });
-        };
+                vertx.eventBus().<JsonObject>send(EpagesApiClientVerticle.EVENT_BUS_ADDRESS, apiRequestData,
+                    reply -> {
+                        if (reply.succeeded()) {
+                            message.reply(reply.result().body().getString("sso_url"));
+                        } else {
+                            ReplyException error = (ReplyException) reply.cause();
+                            message.fail(error.failureCode(), error.getMessage());
+                        }
+                    });
+            } else {
+                String errorMsg = result.cause().getMessage();
+                LOG.error(errorMsg);
+                message.fail(500, errorMsg);
+            }
+        });
     };
 
     private Future<Installation> getInstallationFromDb(String shopPublicId) {

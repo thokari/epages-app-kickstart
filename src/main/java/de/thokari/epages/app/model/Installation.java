@@ -45,7 +45,7 @@ public class Installation extends Model {
         this.shopName = shopName;
         this.email = email;
         this.emailConfirmed = emailConfirmed;
-        if (created != null) {
+        if (created == null) {
             this.created = new Timestamp(new Date().getTime()).toInstant().toString();
         }
     }

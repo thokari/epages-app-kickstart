@@ -1,0 +1,61 @@
+[
+  {
+    "id": "my-client-id",
+    "appType": "APP_OAUTH2_SSO",
+    "activationProfile": [
+      {
+        "provider": "epages",
+        "businessUnit": "Distributor",
+        "shopTypes": [
+            "Demo"
+        ]
+      }
+    ],
+    "callbackUrl": {
+        "de": "http://172.21.129.34:8080/callback"
+    },
+    "appUrl": {
+        "de": "http://www.googel.com"
+    },
+    "iconUrl": {
+        "de": "http://www.googel.com/icon"
+    },
+    "logoUrl": {
+        "de": "http://www.googel.com/logo.png"
+    },
+    "name": {
+        "de": "CM4All"
+    },
+    "features": {
+        "de": [
+            "feature"
+        ]
+    },
+    "shortDescription": {
+        "de": "shortDescription"
+    },
+    "description": {
+        "de": "description"
+    },
+    "categories": [
+        "marketing_sales"
+    ],
+    "images": {
+        "de": []
+    },
+    "developer": {
+        "de": "Christian Breitkreutz"
+    },
+    "supportEmail": {
+        "de": "support@CM4ALL.com"
+    },
+    "supportWebsite": {
+        "de": "http://support.cleverreach.de"
+    },
+    "requirements": {
+        "de": "Kostenloser Account"
+    },
+    "createdAt": "2016-08-16T11:47:30.624+02:00",
+    "aliases": []
+  }
+]

@@ -1,6 +1,7 @@
 package de.thokari.epages.app.model;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
@@ -59,11 +60,32 @@ public class InstallationRequest extends Model {
 
     public static InstallationRequest fromMultiMap(MultiMap source) {
         return new InstallationRequest(
-            source.get("code"),
-            source.get("api_url"),
-            source.get("access_token_url"),
-            source.get("return_url"),
+            source.get("code"), //
+            source.get("api_url"), //
+            source.get("access_token_url"), //
+            source.get("return_url"), //
             source.get("signature"));
+    }
+
+    public static InstallationRequest fromCallbackUrl(String callbackUrl) {
+        // http://172.21.129.34:8080/callback?code=OUsmOf2pQKxuhM20pC7w5kf84SvvJpPs&access_token_url=http://vm-thirsch.intern.epages.de/rs/shops/DemoShop/token&signature=vXrgqqlgsv35tuRmvT1kVHmS9Xzt3yYWGs5QQoZiwZI%3D"
+        String query = callbackUrl.split("\\?")[1];
+        String[] parameters = query.split("&");
+        String code = parameters[0].split("=")[1];
+
+        String accessTokenUrl = parameters[1].split("=")[1];
+        String urlEncodedSignature = parameters[2].split("=")[1];
+        String signature = null;
+        try {
+            signature = URLDecoder.decode(urlEncodedSignature, "utf-8");
+        } catch (UnsupportedEncodingException e) {
+            LOG.error("Something went wrong because of a programming error");
+        }
+
+        // TODO why is this missing?!
+        String apiUrl = accessTokenUrl.substring(0, accessTokenUrl.indexOf("/token"));
+
+        return new InstallationRequest(code, apiUrl, accessTokenUrl, "not_needed", signature);
     }
 
     public Boolean hasValidSignature(String secret) {

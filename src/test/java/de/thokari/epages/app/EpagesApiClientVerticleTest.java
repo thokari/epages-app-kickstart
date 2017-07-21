@@ -87,7 +87,7 @@ public class EpagesApiClientVerticleTest {
                     vertx.eventBus().<JsonObject>send(
                         EpagesApiClientVerticle.EVENT_BUS_ADDRESS, apiCall, response -> {
                             context.assertTrue(response.failed());
-                            context.assertEquals("API request failed", response.cause().getMessage());
+                            context.assertTrue(response.cause().getMessage().startsWith(String.format("API request to '%s' failed because of 'Connection refused", apiMockUrl)));
                             context.assertEquals(500, ((ReplyException) response.cause()).failureCode());
                             async.complete();
                         });

@@ -1,11 +1,11 @@
 {
-    "clientId": "BF2DCB36-57EA-4A72-B1B3-72D13E86E256",
-    "clientSecret": "4hqwZKMeJ8xxL1nvoCrOuRTlLOPysQ6P",
+    "clientId": "my-client-id",
+    "clientSecret": "my-client-secret",
     "appProtocol": "http",
     "appHostname": "0.0.0.0",
     "appPort": 8080,
-    "appStaticPath": "/sso-partner-app",
-    "appApiPath": "/sso-partner-app-api",
+    "appStaticPath": "/sso-partner",
+    "appApiPath": "/sso-partner-api",
     "callbackPath": "/callback",
 
     "database": {

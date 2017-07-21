@@ -18,7 +18,7 @@ public class InstallationTest {
 
     @Test
     public void testGetInsertQuery() {
-        Installation installation = new Installation(shopName, apiUrl, accessToken);
+        Installation installation = new Installation(apiUrl, accessToken, shopName);
         String query = installation.getInsertQuery();
 
         assertEquals(

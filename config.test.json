@@ -4,8 +4,8 @@
     "appProtocol": "http",
     "appHostname": "localhost",
     "appPort": 8080,
-    "appStaticPath": "/sso-partner-app",
-    "appApiPath": "/sso-partner-app-api",
+    "appStaticPath": "/sso-partner",
+    "appApiPath": "/sso-partner-api",
     "callbackPath": "/callback",
 
     "database": {
