@@ -1,0 +1,10 @@
+[
+  {
+    "id": "my-client-id",
+    "name": "CM4All",
+    "secret": "my-client-secret",
+    "scopes": [
+      "sso_read"
+    ]
+  }
+]

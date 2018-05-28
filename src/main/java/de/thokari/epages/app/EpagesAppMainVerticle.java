@@ -21,6 +21,8 @@ public class EpagesAppMainVerticle extends AbstractVerticle {
         Future<String> appInstallationDeployed = Future.future();
         Future<String> epagesApiClientDeployed = Future.future();
         Future<String> httpServerDeployed = Future.future();
+        Future<String> ssoLoginVerticleDeployed = Future.future();
+        Future<String> ssoShopCreationVerticleDeployed = Future.future();
 
         vertx.deployVerticle(
             AppInstallationVerticle.class.getName(), deploymentOpts, appInstallationDeployed.completer());
@@ -28,8 +30,18 @@ public class EpagesAppMainVerticle extends AbstractVerticle {
             HttpServerVerticle.class.getName(), deploymentOpts, httpServerDeployed.completer());
         vertx.deployVerticle(
             EpagesApiClientVerticle.class.getName(), deploymentOpts, epagesApiClientDeployed.completer());
+        vertx.deployVerticle(
+            SsoShopCreationVerticle.class.getName(), deploymentOpts, ssoShopCreationVerticleDeployed.completer());
+        vertx.deployVerticle(
+            SsoLoginVerticle.class.getName(), deploymentOpts, ssoLoginVerticleDeployed.completer());
 
-        CompositeFuture.all(appInstallationDeployed, httpServerDeployed, epagesApiClientDeployed)
+        CompositeFuture
+            .all(
+                appInstallationDeployed, //
+                httpServerDeployed, //
+                epagesApiClientDeployed, //
+                ssoShopCreationVerticleDeployed, //
+                ssoLoginVerticleDeployed)
             .setHandler(deployed -> {
                 if (deployed.failed()) {
                     throw new RuntimeException("Verticle deployment failed.", deployed.cause());

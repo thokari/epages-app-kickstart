@@ -58,33 +58,25 @@ public class AppInstallationVerticle extends AbstractVerticle {
 
                     if (tokenResponse.failed()) {
                         String errorMsg = String.format("could not get token for event %s because of %s",
-                            event.toString(), tokenResponse.cause());
+                            event.toString(), tokenResponse.cause().getMessage());
                         LOG.error(errorMsg);
                         message.fail(500, errorMsg);
                     } else {
                         AccessToken token = tokenResponse.result();
                         String accessToken = token.principal().getString("access_token");
                         LOG.info(String.format("obtained access token %s for API URL %s", accessToken, event.apiUrl));
-                        getShopInfo(accessToken, event.apiUrl).setHandler(shopInfo -> {
-                            if (shopInfo.failed()) {
-                                String errorMsg = String.format("could not get shop info for event %s because of %s",
-                                    event.toString(), shopInfo.cause());
+
+                        Future<JsonObject> installationCompleted = createInstallation(accessToken,
+                            new JsonObject().put("shop_name", "Milestones"), event);
+                        installationCompleted.setHandler(installationResult -> {
+                            if (installationResult.failed()) {
+                                String errorMsg = String.format(
+                                    "could not create installation for event %s because of %s",
+                                    event.toString(), installationResult.cause());
                                 LOG.error(errorMsg);
                                 message.fail(500, errorMsg);
                             } else {
-                                Future<JsonObject> installationCompleted = createInstallation(accessToken,
-                                    shopInfo.result(), event);
-                                installationCompleted.setHandler(installationResult -> {
-                                    if (installationResult.failed()) {
-                                        String errorMsg = String.format(
-                                            "could not create installation for event %s because of %s",
-                                            event.toString(), installationResult.cause());
-                                        LOG.error(errorMsg);
-                                        message.fail(500, errorMsg);
-                                    } else {
-                                        message.reply(installationResult.result());
-                                    }
-                                });
+                                message.reply(installationResult.result());
                             }
                         });
                     }
@@ -107,27 +99,9 @@ public class AppInstallationVerticle extends AbstractVerticle {
         Future<JsonObject> future = Future.future();
 
         // TODO shop name etc.
-        Installation installation = new Installation("Milestones", event.apiUrl, accessToken);
+        Installation installation = new Installation(event.apiUrl, accessToken, shopInfo.getString("shop_name"));
 
         saveInstallation(installation).setHandler(future);
-        return future;
-    }
-
-    private Future<JsonObject> getShopInfo(String accessToken, String apiUrl) {
-        Future<JsonObject> future = Future.future();
-
-        JsonObject message = new JsonObject()
-            .put("action", "shop-info")
-            .put("apiUrl", apiUrl)
-            .put("accessToken", accessToken);
-
-        vertx.eventBus().<JsonObject>send(EpagesApiClientVerticle.EVENT_BUS_ADDRESS, message, response -> {
-            if (response.failed()) {
-                future.fail(response.cause().getMessage());
-            } else {
-                future.complete(response.result().body());
-            }
-        });
         return future;
     }
 

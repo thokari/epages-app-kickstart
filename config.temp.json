@@ -2,7 +2,7 @@
     "clientId": "my-client-id",
     "clientSecret": "my-client-secret",
     "appProtocol": "http",
-    "appHostname": "localhost",
+    "appHostname": "0.0.0.0",
     "appPort": 8080,
     "appStaticPath": "/sso-partner",
     "appApiPath": "/sso-partner-api",
@@ -14,7 +14,7 @@
         "maxPoolSize": 10,
         "username": "vertx",
         "password": "vertx",
-        "database": "epages-app-test",
+        "database": "epages-app",
         "charset": "utf-8",
         "queryTimeout": 2000
     }

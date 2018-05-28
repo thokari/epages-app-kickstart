@@ -13,31 +13,30 @@ public class InstallationTest {
 
     final String shopName = "my-shop";
     final String apiUrl = "http://example.com/my-shop";
-    final String accessToken = "abcd1234";
+    final String accessToken = "accessToken1234";
     final Boolean emailConfirmed = false;
 
     @Test
     public void testGetInsertQuery() {
-        Installation installation = new Installation(shopName, apiUrl, accessToken);
+        Installation installation = new Installation(apiUrl, accessToken, shopName);
         String query = installation.getInsertQuery();
 
         assertEquals(
-            "INSERT INTO installations (api_url, access_token, shop_name, email_confirmed, created) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO installations (api_url, access_token, shop_name, created) VALUES (?, ?, ?, ?)",
             query);
     }
 
     @Test
-    public void testGetQueryParams() {
-        Installation installation = new Installation(shopName, apiUrl, accessToken);
+    public void testGetInsertQueryParams() {
+        Installation installation = new Installation(apiUrl, accessToken, shopName);
 
         JsonArray expected = new JsonArray()
             .add(apiUrl)
             .add(accessToken)
-            .add(shopName)
-            .add(emailConfirmed);
+            .add(shopName);
 
         JsonArray actual = installation.getInsertQueryParams();
-        actual.remove(4);
+        actual.remove(3); // remove the timestamp parameter to avoid mocking the clock...
 
         assertEquals(expected, actual);
     }

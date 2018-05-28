@@ -1,6 +1,7 @@
 package de.thokari.epages.app;
 
 import static io.vertx.core.http.HttpMethod.GET;
+import static io.vertx.core.http.HttpMethod.POST;
 
 import java.net.MalformedURLException;
 
@@ -15,6 +16,7 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 
 public class HttpServerVerticle extends AbstractVerticle {
@@ -24,6 +26,8 @@ public class HttpServerVerticle extends AbstractVerticle {
         final AppConfig appConfig = Model.fromJsonObject(config(), AppConfig.class);
 
         Router mainRouter = Router.router(vertx);
+        mainRouter.route().handler(BodyHandler.create());
+
         mainRouter.route(GET, appConfig.callbackPath).handler(ctx -> {
 
             final HttpServerResponse response = ctx.response();
@@ -45,12 +49,48 @@ public class HttpServerVerticle extends AbstractVerticle {
                             int statusCode = error.failureCode();
                             response.setStatusCode(statusCode).end(errorMsg);
                         } else {
-                            response.headers().add("Location", appConfig.appStaticPath);
-                            response.setStatusCode(302).end();
+                            response.setStatusCode(204).end();
                         }
                     });
             }
+        });
 
+        mainRouter.route(POST, "/sso-create-shop").handler(ctx -> {
+            String body = ctx.getBodyAsString();
+            vertx.eventBus().<String>send(
+                SsoShopCreationVerticle.EVENT_BUS_ADDRESS, body, reply -> {
+                    final HttpServerResponse response = ctx.response();
+
+                    if (reply.failed()) {
+                        ReplyException error = (ReplyException) reply.cause();
+                        String errorMsg = error.getMessage();
+                        int statusCode = error.failureCode();
+                        response.setStatusCode(statusCode).end(errorMsg);
+                    } else {
+                        response.setStatusCode(301).headers().add("Location", appConfig.appStaticPath + "/login.html");
+                        response.end();
+                    }
+                });
+        });
+
+        mainRouter.route(POST, "/sso-login").handler(ctx -> {
+            String body = ctx.getBodyAsString();
+            String shopName = body.split("=")[1];
+            vertx.eventBus().<String>send(
+                SsoLoginVerticle.EVENT_BUS_ADDRESS, shopName, reply -> {
+                    final HttpServerResponse response = ctx.response();
+
+                    if (reply.failed()) {
+                        ReplyException error = (ReplyException) reply.cause();
+                        String errorMsg = error.getMessage();
+                        int statusCode = error.failureCode();
+                        response.setStatusCode(statusCode).end(errorMsg);
+                    } else {
+                        String ssoUrl = reply.result().body();
+                        response.setStatusCode(301).headers().add("Location", ssoUrl);
+                        response.end();
+                    }
+                });
         });
 
         Router apiRouter = Router.router(vertx);
@@ -59,7 +99,10 @@ public class HttpServerVerticle extends AbstractVerticle {
         });
 
         mainRouter.mountSubRouter(appConfig.appApiPath, apiRouter);
-        mainRouter.route(appConfig.appStaticPath).handler(StaticHandler.create());
+
+        StaticHandler staticHandler = StaticHandler.create()
+            .setMaxAgeSeconds(0);
+        mainRouter.route(appConfig.appStaticPath + "/*").handler(staticHandler);
 
         PemKeyCertOptions certOptions = new PemKeyCertOptions();
 
@@ -68,7 +111,8 @@ public class HttpServerVerticle extends AbstractVerticle {
             .setPemKeyCertOptions(certOptions);
 
         HttpServer server = vertx
-            .createHttpServer(serverOptions);
+            .createHttpServer(
+                serverOptions);
         server.requestHandler(mainRouter::accept).listen(appConfig.appPort, appConfig.appHostname);
     }
 

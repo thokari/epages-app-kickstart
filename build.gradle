@@ -29,7 +29,7 @@ dependencies {
     compile "io.vertx:vertx-mysql-postgresql-client:${vertxVersion}"
     compile "io.vertx:vertx-auth-oauth2:${vertxVersion}"
     compile 'org.flywaydb:flyway-core:4.1.2'
-    
+
     testCompile "junit:junit:4.12"
     testCompile "io.vertx:vertx-unit:${vertxVersion}"
     testCompile 'com.github.stefanbirkner:system-rules:1.16.0'
@@ -84,9 +84,10 @@ shadowJar {
     }
 }
 
-jar.enabled false
 test {
     dependsOn flywayClean, flywayMigrate
     systemProperties = vertxLoggingSystemProperties
 }
+
+[jar, assembleDist, distTar, distZip, installDist]*.enabled = false
 build.dependsOn shadowJar
