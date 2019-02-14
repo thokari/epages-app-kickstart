@@ -68,7 +68,6 @@ public class InstallationRequest extends Model {
     }
 
     public static InstallationRequest fromCallbackUrl(String callbackUrl) {
-        // http://172.21.129.34:8080/callback?code=OUsmOf2pQKxuhM20pC7w5kf84SvvJpPs&access_token_url=http://vm-thirsch.intern.epages.de/rs/shops/DemoShop/token&signature=vXrgqqlgsv35tuRmvT1kVHmS9Xzt3yYWGs5QQoZiwZI%3D"
         String query = callbackUrl.split("\\?")[1];
         String[] parameters = query.split("&");
         String code = parameters[0].split("=")[1];
