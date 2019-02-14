@@ -12,7 +12,7 @@
       }
     ],
     "callbackUrl": {
-        "de": "http://172.21.129.34:8080/callback"
+        "de": "http://localhost:8080/callback"
     },
     "appUrl": {
         "de": "http://www.googel.com"
@@ -24,7 +24,7 @@
         "de": "http://www.googel.com/logo.png"
     },
     "name": {
-        "de": "CM4All"
+        "de": "My ePages App"
     },
     "features": {
         "de": [
@@ -44,13 +44,13 @@
         "de": []
     },
     "developer": {
-        "de": "Christian Breitkreutz"
+        "de": "Thomas Hirsch"
     },
     "supportEmail": {
-        "de": "support@CM4ALL.com"
+        "de": "support@example.com"
     },
     "supportWebsite": {
-        "de": "http://support.cleverreach.de"
+        "de": "http://support.example.com"
     },
     "requirements": {
         "de": "Kostenloser Account"
