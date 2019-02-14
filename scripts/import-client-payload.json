@@ -1,7 +1,7 @@
 [
   {
     "id": "my-client-id",
-    "name": "CM4All",
+    "name": "My ePages App",
     "secret": "my-client-secret",
     "scopes": [
       "sso_read"
