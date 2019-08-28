@@ -55,44 +55,6 @@ public class HttpServerVerticle extends AbstractVerticle {
             }
         });
 
-        mainRouter.route(POST, "/sso-create-shop").handler(ctx -> {
-            String body = ctx.getBodyAsString();
-            vertx.eventBus().<String>send(
-                SsoShopCreationVerticle.EVENT_BUS_ADDRESS, body, reply -> {
-                    final HttpServerResponse response = ctx.response();
-
-                    if (reply.failed()) {
-                        ReplyException error = (ReplyException) reply.cause();
-                        String errorMsg = error.getMessage();
-                        int statusCode = error.failureCode();
-                        response.setStatusCode(statusCode).end(errorMsg);
-                    } else {
-                        response.setStatusCode(301).headers().add("Location", appConfig.appStaticPath + "/login.html");
-                        response.end();
-                    }
-                });
-        });
-
-        mainRouter.route(POST, "/sso-login").handler(ctx -> {
-            String body = ctx.getBodyAsString();
-            String shopName = body.split("=")[1];
-            vertx.eventBus().<String>send(
-                SsoLoginVerticle.EVENT_BUS_ADDRESS, shopName, reply -> {
-                    final HttpServerResponse response = ctx.response();
-
-                    if (reply.failed()) {
-                        ReplyException error = (ReplyException) reply.cause();
-                        String errorMsg = error.getMessage();
-                        int statusCode = error.failureCode();
-                        response.setStatusCode(statusCode).end(errorMsg);
-                    } else {
-                        String ssoUrl = reply.result().body();
-                        response.setStatusCode(301).headers().add("Location", ssoUrl);
-                        response.end();
-                    }
-                });
-        });
-
         Router apiRouter = Router.router(vertx);
         apiRouter.route(GET, "/*").handler(ctx -> {
             ctx.response().end("version: 0.1");

@@ -51,11 +51,15 @@ public class InstallationRequest extends Model {
         this.accessTokenUrl = validate("access_token_url", accessTokenUrl);
         this.returnUrl = validate("return_url", returnUrl);
         this.signature = validate("signature", signature);
+        /*
         try {
             this.tokenPath = accessTokenUrl.substring(apiUrl.length());
         } catch (Exception e) {
-            throw new IllegalArgumentException("access_token_url must contain api_url");
+            throw new IllegalArgumentException(String.format(
+                "access_token_url '%s' must contain api_url '%s'", this.accessTokenUrl, this.apiUrl
+            ));
         }
+        */
     }
 
     public static InstallationRequest fromMultiMap(MultiMap source) {
