@@ -1,10 +1,5 @@
 package de.thokari.epages.app;
 
-import static io.vertx.core.http.HttpMethod.GET;
-import static io.vertx.core.http.HttpMethod.POST;
-
-import java.net.MalformedURLException;
-
 import de.thokari.epages.app.model.AppConfig;
 import de.thokari.epages.app.model.InstallationRequest;
 import de.thokari.epages.app.model.Model;
@@ -14,14 +9,16 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.net.PemKeyCertOptions;
+import io.vertx.core.net.SelfSignedCertificate;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 
+import static io.vertx.core.http.HttpMethod.GET;
+
 public class HttpServerVerticle extends AbstractVerticle {
 
-    public void start() throws MalformedURLException {
+    public void start() {
 
         final AppConfig appConfig = Model.fromJsonObject(config(), AppConfig.class);
 
@@ -62,19 +59,16 @@ public class HttpServerVerticle extends AbstractVerticle {
 
         mainRouter.mountSubRouter(appConfig.appApiPath, apiRouter);
 
-        StaticHandler staticHandler = StaticHandler.create()
-            .setMaxAgeSeconds(0);
+        StaticHandler staticHandler = StaticHandler.create().setMaxAgeSeconds(0);
         mainRouter.route(appConfig.appStaticPath + "/*").handler(staticHandler);
 
-        PemKeyCertOptions certOptions = new PemKeyCertOptions();
+        SelfSignedCertificate certificate = SelfSignedCertificate.create();
 
         HttpServerOptions serverOptions = new HttpServerOptions()
             .setSsl("https" == appConfig.appProtocol)
-            .setPemKeyCertOptions(certOptions);
+            .setKeyCertOptions(certificate.keyCertOptions());
 
-        HttpServer server = vertx
-            .createHttpServer(
-                serverOptions);
+        HttpServer server = vertx.createHttpServer(serverOptions);
         server.requestHandler(mainRouter::accept).listen(appConfig.appPort, appConfig.appHostname);
     }
 

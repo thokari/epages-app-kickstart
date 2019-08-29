@@ -1,8 +1,5 @@
 package de.thokari.epages.app;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpClient;
@@ -11,6 +8,9 @@ import io.vertx.core.http.RequestOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+
+import java.net.MalformedURLException;
+import java.net.URL;
 
 public class EpagesApiClientVerticle extends AbstractVerticle {
 

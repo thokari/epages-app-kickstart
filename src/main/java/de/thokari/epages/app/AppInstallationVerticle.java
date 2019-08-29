@@ -1,7 +1,5 @@
 package de.thokari.epages.app;
 
-import java.net.MalformedURLException;
-
 import de.thokari.epages.app.model.AppConfig;
 import de.thokari.epages.app.model.Installation;
 import de.thokari.epages.app.model.InstallationRequest;
@@ -28,7 +26,7 @@ public class AppInstallationVerticle extends AbstractVerticle {
     private static final Logger LOG = LoggerFactory.getLogger(AppInstallationVerticle.class);
     private AsyncSQLClient dbClient;
 
-    public void start() throws MalformedURLException {
+    public void start() {
 
         AppConfig appConfig = Model.fromJsonObject(config(), AppConfig.class);
         dbClient = PostgreSQLClient.createShared(vertx, appConfig.database.toJsonObject());

@@ -1,15 +1,14 @@
 package de.thokari.epages.app.model;
 
-import java.sql.Timestamp;
-import java.util.Date;
-import java.util.stream.Collectors;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import io.vertx.core.json.JsonArray;
+
+import java.sql.Timestamp;
+import java.util.Date;
+import java.util.stream.Collectors;
 
 public class Installation extends Model {
 

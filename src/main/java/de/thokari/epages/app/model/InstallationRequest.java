@@ -1,20 +1,18 @@
 package de.thokari.epages.app.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.vertx.core.MultiMap;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import io.vertx.core.MultiMap;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 
 public class InstallationRequest extends Model {
 
@@ -51,7 +49,6 @@ public class InstallationRequest extends Model {
         this.accessTokenUrl = validate("access_token_url", accessTokenUrl);
         this.returnUrl = validate("return_url", returnUrl);
         this.signature = validate("signature", signature);
-        /*
         try {
             this.tokenPath = accessTokenUrl.substring(apiUrl.length());
         } catch (Exception e) {
@@ -59,7 +56,6 @@ public class InstallationRequest extends Model {
                 "access_token_url '%s' must contain api_url '%s'", this.accessTokenUrl, this.apiUrl
             ));
         }
-        */
     }
 
     public static InstallationRequest fromMultiMap(MultiMap source) {
