@@ -23,3 +23,4 @@ The simplest way to install an app into your shop would be to use the "Private A
  - set the credentials (`clientId` and `clientSecret`) in the file
 `config.test.json`.
  - you might also need to change the `appHostname`, depending on your particular setup, and `callbackPath`, depending on what you entered before
+ - run the app, use the "Test authorisation" button, verify the log output of the app
