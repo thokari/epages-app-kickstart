@@ -5,6 +5,10 @@ import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -50,8 +54,7 @@ public class AppConfigTest {
         assertEquals("db-user-from-env", appConfig.database.username);
     }
 
-    @Test(
-        expected = DecodeException.class)
+    @Test(expected = DecodeException.class)
     public void testMissingAttributeThrowsException() {
         JsonObject modified = configJson.copy();
         modified.remove("clientId");

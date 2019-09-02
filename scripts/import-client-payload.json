@@ -1,10 +1,14 @@
-[
-  {
-    "id": "my-client-id",
-    "name": "My ePages App",
-    "secret": "my-client-secret",
+[{
+    "id": "epages-app-kickstart-client-id",
+    "name": "epages-app-kickstart",
+    "secret": "epages-app-kickstart-client-secret",
     "scopes": [
-      "sso_read"
+        "products_read",
+        "products_write",
+        "products_read_batch",
+        "orders_read",
+        "orders_write",
+        "customers_read",
+        "customers_write"
     ]
-  }
-]
+}]

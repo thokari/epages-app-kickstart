@@ -29,18 +29,17 @@ public class EpagesAppMainVerticle extends AbstractVerticle {
         vertx.deployVerticle(
             EpagesApiClientVerticle.class.getName(), deploymentOpts, epagesApiClientDeployed.completer());
 
-        CompositeFuture
-            .all(
-                appInstallationDeployed, //
-                httpServerDeployed, //
-                epagesApiClientDeployed)
-            .setHandler(deployed -> {
-                if (deployed.failed()) {
-                    throw new RuntimeException("Verticle deployment failed.", deployed.cause());
-                } else {
-                    LOG.info("App started with config " + appConfig.toJsonObject().encode());
-                }
-            });
+        CompositeFuture.all(
+            appInstallationDeployed, //
+            httpServerDeployed, //
+            epagesApiClientDeployed)
+        .setHandler(deployed -> {
+            if (deployed.failed()) {
+                throw new RuntimeException("Verticle deployment failed.", deployed.cause());
+            } else {
+                LOG.info("App started with config " + appConfig.toJsonObject().encode());
+            }
+        });
     }
 
 }

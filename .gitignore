@@ -6,4 +6,7 @@ bin/
 .project
 .classpath
 .settings/
+*.ipr
+*.iml
+*.iws
 .DS_Store

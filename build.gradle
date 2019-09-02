@@ -92,3 +92,4 @@ test {
 
 [jar, assembleDist, distTar, distZip, installDist]*.enabled = false
 build.dependsOn shadowJar
+run.dependsOn flywayMigrate

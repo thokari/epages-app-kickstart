@@ -1,41 +1,84 @@
-[
-  {
-    "id": "my-client-id",
-    "appType": "APP_OAUTH2_SSO",
-    "activationProfile": [
-      {
+[{
+    "id": "epages-app-kickstart-client-id",
+    "name": {
+        "de": "epages-app-kickstart",
+        "en": "epages-app-kickstart"
+    },
+    "appType": "APP_OAUTH2",
+    "scopes": [
+        "products_read",
+        "products_write",
+        "products_read_batch",
+        "orders_read",
+        "orders_write",
+        "customers_read",
+        "customers_write"
+    ],
+    "activationProfile": [{
         "provider": "epages",
         "businessUnit": "Distributor",
         "shopTypes": [
             "Demo"
         ]
-      }
-    ],
+    }],
     "callbackUrl": {
-        "de": "http://localhost:8080/callback"
+        "de": "https://thirsch.intern.epages.de:8443/callback",
+        "en": "https://thirsch.intern.epages.de:8443/callback"
     },
     "appUrl": {
-        "de": "http://www.googel.com"
+        "de": "https://example.com",
+        "en": "https://example.com"
     },
     "iconUrl": {
-        "de": "http://www.googel.com/icon"
+        "de": "https://via.placeholder.com/64",
+        "en": "https://via.placeholder.com/64"
     },
     "logoUrl": {
-        "de": "http://www.googel.com/logo.png"
+        "de": "https://via.placeholder.com/260x160",
+        "en": "https://via.placeholder.com/260x160"
     },
-    "name": {
-        "de": "My ePages App"
+    "images": {
+        "en": [{
+                "image": [{
+                        "url": "https://via.placeholder.com/260x160",
+                        "classifier": "small"
+                    },
+                    {
+                        "url": "https://via.placeholder.com/1040x640",
+                        "classifier": "large"
+                    }
+                ]
+            },
+            {
+                "image": [{
+                        "url": "https://via.placeholder.com/260x16",
+                        "classifier": "small"
+                    },
+                    {
+                        "url": "https://via.placeholder.com/1040x640",
+                        "classifier": "large"
+                    }
+                ]
+            }
+        ]
     },
     "features": {
         "de": [
-            "feature"
+            "feature 1",
+            "feature 2"
+        ],
+        "en": [
+            "feature 1",
+            "feature 2"
         ]
     },
     "shortDescription": {
-        "de": "shortDescription"
+        "de": "Kurzbeschreibung",
+        "en": "shortDescription"
     },
     "description": {
-        "de": "description"
+        "de": "Beschreibung",
+        "en": "description"
     },
     "categories": [
         "marketing_sales"
@@ -44,18 +87,21 @@
         "de": []
     },
     "developer": {
-        "de": "Thomas Hirsch"
+        "de": "Thomas Hirsch",
+        "en": "Thomas Hirsch"
     },
     "supportEmail": {
-        "de": "support@example.com"
+        "de": "support@example.com",
+        "en": "support@example.com"
     },
     "supportWebsite": {
-        "de": "http://support.example.com"
+        "de": "https://example.com/support",
+        "en": "https://example.com/support"
     },
     "requirements": {
-        "de": "Kostenloser Account"
+        "de": "Kostenloser Account",
+        "en": "free account"
     },
     "createdAt": "2016-08-16T11:47:30.624+02:00",
     "aliases": []
-  }
-]
+}]

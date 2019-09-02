@@ -12,6 +12,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.SelfSignedCertificate;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.LoggerHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 
 import static io.vertx.core.http.HttpMethod.GET;
@@ -23,6 +24,7 @@ public class HttpServerVerticle extends AbstractVerticle {
         final AppConfig appConfig = Model.fromJsonObject(config(), AppConfig.class);
 
         Router mainRouter = Router.router(vertx);
+        mainRouter.route().handler(LoggerHandler.create());
         mainRouter.route().handler(BodyHandler.create());
 
         mainRouter.route(GET, appConfig.callbackPath).handler(ctx -> {
@@ -62,14 +64,13 @@ public class HttpServerVerticle extends AbstractVerticle {
         StaticHandler staticHandler = StaticHandler.create().setMaxAgeSeconds(0);
         mainRouter.route(appConfig.appStaticPath + "/*").handler(staticHandler);
 
-        SelfSignedCertificate certificate = SelfSignedCertificate.create();
-
-        HttpServerOptions serverOptions = new HttpServerOptions()
-            .setSsl("https" == appConfig.appProtocol)
-            .setKeyCertOptions(certificate.keyCertOptions());
-
+        HttpServerOptions serverOptions = new HttpServerOptions();
+        if ("https".equals(appConfig.appProtocol)) {
+            SelfSignedCertificate certificate = SelfSignedCertificate.create();
+            serverOptions.setSsl(true).setKeyCertOptions(certificate.keyCertOptions());
+        }
         HttpServer server = vertx.createHttpServer(serverOptions);
+
         server.requestHandler(mainRouter::accept).listen(appConfig.appPort, appConfig.appHostname);
     }
-
 }
