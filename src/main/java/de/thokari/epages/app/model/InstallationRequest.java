@@ -1,6 +1,7 @@
 package de.thokari.epages.app.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.vertx.core.MultiMap;
 import io.vertx.core.logging.Logger;
@@ -49,13 +50,7 @@ public class InstallationRequest extends Model {
         this.accessTokenUrl = validate("access_token_url", accessTokenUrl);
         this.returnUrl = validate("return_url", returnUrl);
         this.signature = validate("signature", signature);
-        try {
-            this.tokenPath = accessTokenUrl.substring(apiUrl.length());
-        } catch (Exception e) {
-            throw new IllegalArgumentException(String.format(
-                "access_token_url '%s' must contain api_url '%s'", this.accessTokenUrl, this.apiUrl
-            ));
-        }
+        this.tokenPath = "/token";
     }
 
     public static InstallationRequest fromMultiMap(MultiMap source) {
@@ -81,13 +76,14 @@ public class InstallationRequest extends Model {
             LOG.error("Something went wrong because of a programming error");
         }
 
-        // TODO why is this missing?!
+        // TODO why is this missing in the response?
         String apiUrl = accessTokenUrl.substring(0, accessTokenUrl.indexOf("/token"));
 
         return new InstallationRequest(code, apiUrl, accessTokenUrl, "not_needed", signature);
     }
 
-    public Boolean hasValidSignature(String secret) {
+    @JsonIgnore
+    public String calculateSignature(String secret) {
         String algorithm = "HmacSHA256";
         String encoding = "utf-8";
         Mac mac;
@@ -96,12 +92,16 @@ public class InstallationRequest extends Model {
             mac.init(new SecretKeySpec(secret.getBytes(encoding), algorithm));
         } catch (NoSuchAlgorithmException | InvalidKeyException | UnsupportedEncodingException e) {
             LOG.error("Signature validation failed because of programming error", e);
-            return false;
+            return null;
         }
 
         byte[] rawSignature = mac.doFinal((this.code + ":" + this.accessTokenUrl).getBytes());
-        String signature = Base64.getEncoder().encodeToString(rawSignature);
+        return Base64.getEncoder().encodeToString(rawSignature);
+    }
 
+    @JsonIgnore
+    public Boolean hasValidSignature(String secret) {
+        String signature = calculateSignature(secret);
         return this.signature.equals(signature);
     }
 }
