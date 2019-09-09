@@ -38,7 +38,7 @@ public class AppInstallationVerticleTest {
         .put("api_url", apiMockUrl)
         .put("access_token_url", apiMockTokenUrl)
         .put("return_url", "http://localhost:8080/epages-app")
-        .put("signature", "khbDPOK6OWAk4u+XGOkcy6b30LanJc6Y+Q2AHnFtxu8=");
+        .put("signature", "3AmS3LcnENGi+BEkHY9Bk0D0pFUnmsudemQqjz9lybo=");
 
     final InstallationRequest installationEvent = Model.fromJsonObject(installationRequestSource,
         InstallationRequest.class);
