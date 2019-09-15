@@ -1,25 +1,24 @@
 package de.thokari.epages.app.model;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
+import io.vertx.core.json.JsonObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import io.vertx.core.json.JsonObject;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(JUnit4.class)
 public class InstallationRequestTest {
 
     final JsonObject source = new JsonObject()
-        .put("code", "f32ddSbuff2IGAYvtiwYQiyHyuLJWbey")
-        .put("api_url", "http://localhost:9999/api")
-        .put("access_token_url", "http://localhost:9999/api/token")
-        .put("return_url", "http://localhost:8080/epages-app")
-        .put("signature", "khbDPOK6OWAk4u+XGOkcy6b30LanJc6Y+Q2AHnFtxu8=");
+            .put("code", "f32ddSbuff2IGAYvtiwYQiyHyuLJWbey")
+            .put("api_url", "http://localhost:9999/api")
+            .put("access_token_url", "http://localhost:9999/api/token")
+            .put("return_url", "http://localhost:8080/epages-app")
+            .put("signature", "khbDPOK6OWAk4u+XGOkcy6b30LanJc6Y+Q2AHnFtxu8=");
 
     InstallationRequest installationRequest;
 

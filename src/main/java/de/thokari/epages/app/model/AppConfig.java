@@ -25,15 +25,15 @@ public class AppConfig extends Config {
 
     @JsonCreator
     public AppConfig(
-        @JsonProperty("clientId") String clientId,
-        @JsonProperty("clientSecret") String clientSecret,
-        @JsonProperty("appProtocol") String appProtocol,
-        @JsonProperty("appHostname") String appHostname,
-        @JsonProperty("appPort") Integer appPort,
-        @JsonProperty("appStaticPath") String appStaticPath,
-        @JsonProperty("appApiPath") String appApiPath,
-        @JsonProperty("callbackPath") String callbackPath,
-        @JsonProperty("database") DatabaseConfig database) {
+            @JsonProperty("clientId") String clientId,
+            @JsonProperty("clientSecret") String clientSecret,
+            @JsonProperty("appProtocol") String appProtocol,
+            @JsonProperty("appHostname") String appHostname,
+            @JsonProperty("appPort") Integer appPort,
+            @JsonProperty("appStaticPath") String appStaticPath,
+            @JsonProperty("appApiPath") String appApiPath,
+            @JsonProperty("callbackPath") String callbackPath,
+            @JsonProperty("database") DatabaseConfig database) {
 
         this.clientId = validate("clientId", overrideFromEnv("CLIENT_ID", clientId));
         this.clientSecret = validate("clientSecret", overrideFromEnv("CLIENT_SECRET", clientSecret));

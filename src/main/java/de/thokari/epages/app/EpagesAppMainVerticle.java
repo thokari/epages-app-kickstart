@@ -23,23 +23,23 @@ public class EpagesAppMainVerticle extends AbstractVerticle {
         Future<String> httpServerDeployed = Future.future();
 
         vertx.deployVerticle(
-            AppInstallationVerticle.class.getName(), deploymentOpts, appInstallationDeployed.completer());
+                AppInstallationVerticle.class.getName(), deploymentOpts, appInstallationDeployed.completer());
         vertx.deployVerticle(
-            HttpServerVerticle.class.getName(), deploymentOpts, httpServerDeployed.completer());
+                HttpServerVerticle.class.getName(), deploymentOpts, httpServerDeployed.completer());
         vertx.deployVerticle(
-            EpagesApiClientVerticle.class.getName(), deploymentOpts, epagesApiClientDeployed.completer());
+                EpagesApiClientVerticle.class.getName(), deploymentOpts, epagesApiClientDeployed.completer());
 
         CompositeFuture.all(
-            appInstallationDeployed, //
-            httpServerDeployed, //
-            epagesApiClientDeployed)
-        .setHandler(deployed -> {
-            if (deployed.failed()) {
-                throw new RuntimeException("Verticle deployment failed.", deployed.cause());
-            } else {
-                LOG.info("App started with config " + appConfig.toJsonObject().encode());
-            }
-        });
+                appInstallationDeployed, //
+                httpServerDeployed, //
+                epagesApiClientDeployed)
+                .setHandler(deployed -> {
+                    if (deployed.failed()) {
+                        throw new RuntimeException("Verticle deployment failed.", deployed.cause());
+                    } else {
+                        LOG.info("App started with config " + appConfig.toJsonObject().encode());
+                    }
+                });
     }
 
 }

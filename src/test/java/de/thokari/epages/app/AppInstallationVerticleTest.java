@@ -1,15 +1,5 @@
 package de.thokari.epages.app;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
 import de.thokari.epages.app.model.AppConfig;
 import de.thokari.epages.app.model.InstallationRequest;
 import de.thokari.epages.app.model.Model;
@@ -25,38 +15,41 @@ import io.vertx.ext.asyncsql.PostgreSQLClient;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 @RunWith(VertxUnitRunner.class)
 public class AppInstallationVerticleTest {
 
+    static JsonObject configJson;
+    static AppConfig appConfig;
     final Integer apiMockPort = 9999;
     final String apiMockUrl = "http://localhost:" + apiMockPort + "/api";
     final String apiMockTokenUrl = apiMockUrl + "/token";
-
     final JsonObject installationRequestSource = new JsonObject()
-        .put("code", "f32ddSbuff2IGAYvtiwYQiyHyuLJWbey")
-        .put("api_url", apiMockUrl)
-        .put("access_token_url", apiMockTokenUrl)
-        .put("return_url", "http://localhost:8080/epages-app")
-        .put("signature", "3AmS3LcnENGi+BEkHY9Bk0D0pFUnmsudemQqjz9lybo=");
-
+            .put("code", "f32ddSbuff2IGAYvtiwYQiyHyuLJWbey")
+            .put("api_url", apiMockUrl)
+            .put("access_token_url", apiMockTokenUrl)
+            .put("return_url", "http://localhost:8080/epages-app")
+            .put("signature", "3AmS3LcnENGi+BEkHY9Bk0D0pFUnmsudemQqjz9lybo=");
     final InstallationRequest installationEvent = Model.fromJsonObject(installationRequestSource,
-        InstallationRequest.class);
-
+            InstallationRequest.class);
     final JsonObject tokenResponse = new JsonObject()
-        .put("access_token", "4HZ9hriF6J3GOnd10JbFzdVehycOvAZf");
-
-    static JsonObject configJson;
-    static AppConfig appConfig;
+            .put("access_token", "4HZ9hriF6J3GOnd10JbFzdVehycOvAZf");
+    final Vertx vertx = Vertx.vertx();
+    final DeploymentOptions deploymentOpts = new DeploymentOptions().setConfig(configJson);
+    final Future<HttpServer> apiMockStarted = Future.future();
+    final Future<Void> databasePrepared = Future.future();
     AsyncSQLClient dbClient;
     HttpServer apiMock;
     MessageConsumer<JsonObject> apiClientMock;
-
-    final Vertx vertx = Vertx.vertx();
-    final DeploymentOptions deploymentOpts = new DeploymentOptions().setConfig(configJson);
-
-    final Future<HttpServer> apiMockStarted = Future.future();
-    final Future<Void> databasePrepared = Future.future();
 
     @BeforeClass
     public static void readConfig() throws IOException {
@@ -84,7 +77,7 @@ public class AppInstallationVerticleTest {
             }
         }).listen(apiMockPort, apiMockStarted);
 
-        apiClientMock = vertx.eventBus().<JsonObject>consumer(EpagesApiClientVerticle.EVENT_BUS_ADDRESS, message -> {
+        apiClientMock = vertx.eventBus().consumer(EpagesApiClientVerticle.EVENT_BUS_ADDRESS, message -> {
             if ("shop-info".equals(message.body().getString("action"))) {
                 message.reply(new JsonObject().put("name", "Milestones"));
             } else {
@@ -132,36 +125,36 @@ public class AppInstallationVerticleTest {
                 // WHEN
 
                 vertx.eventBus().<JsonObject>send(
-                    AppInstallationVerticle.EVENT_BUS_ADDRESS,
-                    installationEvent.toJsonObject(),
-                    response -> {
+                        AppInstallationVerticle.EVENT_BUS_ADDRESS,
+                        installationEvent.toJsonObject(),
+                        response -> {
 
-                        // THEN
-                        context.assertTrue(response.succeeded(),
-                            response.cause() != null ? response.cause().getMessage() : null);
-                        context.assertEquals(null, response.result().body());
+                            // THEN
+                            context.assertTrue(response.succeeded(),
+                                    response.cause() != null ? response.cause().getMessage() : "<no error message>");
+                            context.assertEquals(null, response.result().body());
 
-                        dbClient.getConnection(connected -> {
-                            if (connected.failed()) {
-                                connected.cause().printStackTrace();
-                                context.fail();
-                                async.complete();
-                            }
-                            connected.result().query(
-                                String.format("SELECT access_token FROM installations WHERE api_url = '%s'",
-                                    installationEvent.apiUrl),
-                                result -> {
-                                    if (result.failed()) {
-                                        result.cause().printStackTrace();
-                                        context.fail();
-                                    }
-                                    context.assertEquals(tokenResponse.getString("access_token"),
-                                        result.result().getResults().get(0).getValue(0));
-                                    context.assertEquals(1, result.result().getNumRows());
+                            dbClient.getConnection(connected -> {
+                                if (connected.failed()) {
+                                    connected.cause().printStackTrace();
+                                    context.fail();
                                     async.complete();
-                                });
+                                }
+                                connected.result().query(
+                                        String.format("SELECT access_token FROM installations WHERE api_url = '%s'",
+                                                installationEvent.apiUrl),
+                                        result -> {
+                                            if (result.failed()) {
+                                                result.cause().printStackTrace();
+                                                context.fail();
+                                            }
+                                            context.assertEquals(tokenResponse.getString("access_token"),
+                                                    result.result().getResults().get(0).getValue(0));
+                                            context.assertEquals(1, result.result().getNumRows());
+                                            async.complete();
+                                        });
+                            });
                         });
-                    });
             });
         });
         async.awaitSuccess(2000);
@@ -182,7 +175,7 @@ public class AppInstallationVerticleTest {
 
             JsonObject dbConfig = configJson.getJsonObject("database").put("database", "nonexistent");
             DeploymentOptions wrongDbConfig = new DeploymentOptions()
-                .setConfig(configJson.put("database", dbConfig));
+                    .setConfig(configJson.put("database", dbConfig));
 
             vertx.deployVerticle(AppInstallationVerticle.class.getName(), wrongDbConfig, deployed -> {
                 if (deployed.failed()) {
@@ -194,17 +187,17 @@ public class AppInstallationVerticleTest {
                 // WHEN
 
                 vertx.eventBus().<JsonObject>send(
-                    AppInstallationVerticle.EVENT_BUS_ADDRESS,
-                    installationEvent.toJsonObject(),
-                    response -> {
+                        AppInstallationVerticle.EVENT_BUS_ADDRESS,
+                        installationEvent.toJsonObject(),
+                        response -> {
 
-                        // THEN
-                        context.assertTrue(response.failed());
-                        String expectedMessage = "could not create installation for event";
-                        String actualMessage = response.cause().getMessage().substring(0, expectedMessage.length());
-                        context.assertEquals(expectedMessage, actualMessage);
-                        async.complete();
-                    });
+                            // THEN
+                            context.assertTrue(response.failed());
+                            String expectedMessage = "could not create installation for event";
+                            String actualMessage = response.cause().getMessage().substring(0, expectedMessage.length());
+                            context.assertEquals(expectedMessage, actualMessage);
+                            async.complete();
+                        });
             });
         });
         async.awaitSuccess(2000);
@@ -236,17 +229,17 @@ public class AppInstallationVerticleTest {
                 // WHEN
 
                 vertx.eventBus().<JsonObject>send(
-                    AppInstallationVerticle.EVENT_BUS_ADDRESS,
-                    installationEvent.toJsonObject(),
-                    response -> {
+                        AppInstallationVerticle.EVENT_BUS_ADDRESS,
+                        installationEvent.toJsonObject(),
+                        response -> {
 
-                        // THEN
-                        context.assertTrue(response.failed());
-                        String expectedMessage = "could not get token for event";
-                        String actualMessage = response.cause().getMessage().substring(0, expectedMessage.length());
-                        context.assertEquals(expectedMessage, actualMessage);
-                        async.complete();
-                    });
+                            // THEN
+                            context.assertTrue(response.failed());
+                            String expectedMessage = "could not get token for event";
+                            String actualMessage = response.cause().getMessage().substring(0, expectedMessage.length());
+                            context.assertEquals(expectedMessage, actualMessage);
+                            async.complete();
+                        });
             });
         });
         async.awaitSuccess(2000);

@@ -6,7 +6,7 @@ import de.thokari.epages.app.model.InstallationRequest;
 import de.thokari.epages.app.model.Model;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -31,101 +31,88 @@ public class AppInstallationVerticle extends AbstractVerticle {
         AppConfig appConfig = Model.fromJsonObject(config(), AppConfig.class);
         dbClient = PostgreSQLClient.createShared(vertx, appConfig.database.toJsonObject());
 
-        vertx.eventBus()
-            .<JsonObject>consumer(EVENT_BUS_ADDRESS,
-                handleInstallationRequest(appConfig.clientId, appConfig.clientSecret));
+        vertx.eventBus().<JsonObject>consumer(EVENT_BUS_ADDRESS, message ->
+                replyToInstallationRequest(message, appConfig.clientId, appConfig.clientSecret)
+        );
     }
 
-    private Handler<Message<JsonObject>> handleInstallationRequest(String clientId, String clientSecret) {
-        return message -> {
-            InstallationRequest event = Model.fromJsonObject(message.body(), InstallationRequest.class);
-
-            if (!event.hasValidSignature(clientSecret)) {
-                String errorMsg = "Received installation request with invalid signature: " + event.toString();
-                LOG.error(errorMsg);
-                message.fail(400, errorMsg);
-            } else {
-
-                LOG.info("received installation event " + event.toString());
-
-                OAuth2ClientOptions credentials = new OAuth2ClientOptions()
+    private void replyToInstallationRequest(Message<JsonObject> message, String clientId, String clientSecret) {
+        InstallationRequest event = Model.fromJsonObject(message.body(), InstallationRequest.class);
+        if (!event.hasValidSignature(clientSecret)) {
+            String errorMsg = String.format("invalid signature on installation request '%s'", event.toString());
+            LOG.error(errorMsg);
+            message.fail(400, errorMsg);
+        } else {
+            LOG.info("received installation event " + event.toString());
+            OAuth2ClientOptions oAuth2ClientOptions = new OAuth2ClientOptions()
+                    .setFlow(OAuth2FlowType.AUTH_CODE)
                     .setClientID(clientId).setClientSecret(clientSecret)
                     .setSite(event.apiUrl).setTokenPath(event.tokenPath);
+            requestOAuth2Token(oAuth2ClientOptions, event.code, event.returnUrl).otherwise(error -> {
+                String errorMsg = String.format("could not get token for event '%s' because of '%s'",
+                        event.toString(), error.getMessage());
+                LOG.error(errorMsg);
+                message.fail(500, errorMsg);
+                return null;
+            }).compose(accessToken -> {
+                String tokenValue = accessToken.principal().getString("access_token");
+                LOG.info(String.format("obtained access token '%s' for API URL '%s'", tokenValue, event.apiUrl));
 
-                requestOAuth2Token(credentials, event.code, event.returnUrl).setHandler(tokenResponse -> {
-
-                    if (tokenResponse.failed()) {
-                        String errorMsg = String.format("could not get token for event %s because of %s",
-                            event.toString(), tokenResponse.cause().getMessage());
-                        LOG.error(errorMsg);
-                        message.fail(500, errorMsg);
-                    } else {
-                        AccessToken token = tokenResponse.result();
-                        String accessToken = token.principal().getString("access_token");
-                        LOG.info(String.format("obtained access token %s for API URL %s", accessToken, event.apiUrl));
-
-                        Future<JsonObject> installationCompleted = createInstallation(accessToken,
-                            new JsonObject().put("shop_name", "Milestones"), event);
-                        installationCompleted.setHandler(installationResult -> {
-                            if (installationResult.failed()) {
-                                String errorMsg = String.format(
-                                    "could not create installation for event %s because of %s",
-                                    event.toString(), installationResult.cause());
-                                LOG.error(errorMsg);
-                                message.fail(500, errorMsg);
-                            } else {
-                                message.reply(installationResult.result());
-                            }
-                        });
-                    }
+                JsonObject shopInfo = new JsonObject().put("shop_name", "Milestones");
+                createInstallation(tokenValue, shopInfo, event).otherwise(error -> {
+                    String errorMsg = String.format(
+                            "could not create installation for event '%s' because of '%s'",
+                            event.toString(), error.getMessage());
+                    LOG.error(errorMsg);
+                    message.fail(500, errorMsg);
+                    return null;
+                }).compose(installationResult -> {
+                    message.reply(installationResult);
+                    return null;
                 });
-            }
-        };
-    };
+                return null;
+            });
+        }
+    }
 
-    private Future<AccessToken> requestOAuth2Token(OAuth2ClientOptions credentials, String code, String returnUrl) {
-        Future<AccessToken> future = Future.future();
-
-        OAuth2Auth oAuth2 = OAuth2Auth.create(vertx, OAuth2FlowType.AUTH_CODE, credentials);
+    private Future<AccessToken> requestOAuth2Token(OAuth2ClientOptions options, String code, String returnUrl) {
+        Promise<AccessToken> promise = Promise.promise();
+        OAuth2Auth oAuth2 = OAuth2Auth.create(vertx, options);
         JsonObject tokenParameters = new JsonObject().put("code", code).put("redirect_uri", returnUrl);
-
-        oAuth2.getToken(tokenParameters, future);
-        return future;
+        oAuth2.getToken(tokenParameters, promise);
+        return promise.future();
     }
 
     private Future<JsonObject> createInstallation(String accessToken, JsonObject shopInfo, InstallationRequest event) {
-        Future<JsonObject> future = Future.future();
-
-        // TODO shop name etc.
+        Promise<JsonObject> promise = Promise.promise();
         Installation installation = new Installation(event.apiUrl, accessToken, shopInfo.getString("shop_name"));
-
-        saveInstallation(installation).setHandler(future);
-        return future;
+        saveInstallation(installation).setHandler(promise);
+        return promise.future();
     }
 
     private Future<JsonObject> saveInstallation(Installation installation) {
-        Future<JsonObject> future = Future.future();
+        Promise<JsonObject> promise = Promise.promise();
         dbClient.getConnection(connected -> {
             if (connected.failed()) {
-                future.fail(connected.cause().getMessage());
+                promise.fail(connected.cause().getMessage());
             } else {
                 SQLConnection connection = connected.result();
                 String sql = installation.getInsertQuery();
                 JsonArray params = installation.getInsertQueryParams();
 
-                LOG.debug("executing query " + sql + " with parameters " + params.encode());
+                LOG.debug(String.format("executing query '%s' with parameters '%s'", sql, params.encode()));
 
                 connection.queryWithParams(sql, params, queryResult -> {
                     if (queryResult.failed()) {
-                        future.fail(queryResult.cause().getMessage());
+                        promise.fail(queryResult.cause().getMessage());
                     } else {
-                        LOG.info(String.format("installation %s saved", installation.toJsonObject().toString()));
-                        future.complete();
+                        LOG.info(String.format("installation '%s' saved", installation.toJsonObject().toString()));
+                        promise.complete();
                     }
                     connection.close();
                 });
             }
         });
-        return future;
+        return promise.future();
     }
 }

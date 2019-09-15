@@ -39,11 +39,11 @@ public class InstallationRequest extends Model {
 
     @JsonCreator
     public InstallationRequest(
-        @JsonProperty("code") String code,
-        @JsonProperty("api_url") String apiUrl,
-        @JsonProperty("access_token_url") String accessTokenUrl,
-        @JsonProperty("return_url") String returnUrl,
-        @JsonProperty("signature") String signature) {
+            @JsonProperty("code") String code,
+            @JsonProperty("api_url") String apiUrl,
+            @JsonProperty("access_token_url") String accessTokenUrl,
+            @JsonProperty("return_url") String returnUrl,
+            @JsonProperty("signature") String signature) {
 
         this.code = validate("code", code);
         this.apiUrl = validate("api_url", apiUrl);
@@ -55,11 +55,11 @@ public class InstallationRequest extends Model {
 
     public static InstallationRequest fromMultiMap(MultiMap source) {
         return new InstallationRequest(
-            source.get("code"), //
-            source.get("api_url"), //
-            source.get("access_token_url"), //
-            source.get("return_url"), //
-            source.get("signature"));
+                source.get("code"), //
+                source.get("api_url"), //
+                source.get("access_token_url"), //
+                source.get("return_url"), //
+                source.get("signature"));
     }
 
     public static InstallationRequest fromCallbackUrl(String callbackUrl) {

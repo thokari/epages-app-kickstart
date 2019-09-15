@@ -9,16 +9,16 @@ public abstract class Model {
         return Json.decodeValue(source.encode(), clazz);
     }
 
-    public JsonObject toJsonObject() {
-        return new JsonObject(Json.encode(this));
-    }
-
     protected static <T> T validate(final String key, final T value) {
         if (null == value) {
             throw new IllegalArgumentException(key + " must not be null");
         } else {
-            return (T) value;
+            return value;
         }
+    }
+
+    public JsonObject toJsonObject() {
+        return new JsonObject(Json.encode(this));
     }
 
     public String toString() {

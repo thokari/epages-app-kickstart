@@ -40,17 +40,17 @@ public class HttpServerVerticle extends AbstractVerticle {
 
             if (event != null) {
                 vertx.eventBus().<JsonObject>send(
-                    AppInstallationVerticle.EVENT_BUS_ADDRESS, event.toJsonObject(), reply -> {
+                        AppInstallationVerticle.EVENT_BUS_ADDRESS, event.toJsonObject(), reply -> {
 
-                        if (reply.failed()) {
-                            ReplyException error = (ReplyException) reply.cause();
-                            String errorMsg = error.getMessage();
-                            int statusCode = error.failureCode();
-                            response.setStatusCode(statusCode).end(errorMsg);
-                        } else {
-                            response.setStatusCode(204).end();
-                        }
-                    });
+                            if (reply.failed()) {
+                                ReplyException error = (ReplyException) reply.cause();
+                                String errorMsg = error.getMessage();
+                                int statusCode = error.failureCode();
+                                response.setStatusCode(statusCode).end(errorMsg);
+                            } else {
+                                response.setStatusCode(204).end();
+                            }
+                        });
             }
         });
 

@@ -23,14 +23,14 @@ public class DatabaseConfig extends Config {
 
     @JsonCreator
     public DatabaseConfig(
-        @JsonProperty("host") String host,
-        @JsonProperty("port") Integer port,
-        @JsonProperty("maxPoolSize") Integer maxPoolSize,
-        @JsonProperty("username") String username,
-        @JsonProperty("password") String password,
-        @JsonProperty("database") String database,
-        @JsonProperty("charset") String charset,
-        @JsonProperty("queryTimeout") Integer queryTimeout) {
+            @JsonProperty("host") String host,
+            @JsonProperty("port") Integer port,
+            @JsonProperty("maxPoolSize") Integer maxPoolSize,
+            @JsonProperty("username") String username,
+            @JsonProperty("password") String password,
+            @JsonProperty("database") String database,
+            @JsonProperty("charset") String charset,
+            @JsonProperty("queryTimeout") Integer queryTimeout) {
 
         this.host = validate("host", overrideFromEnv("DB_HOST", host));
         this.port = validate("port", overrideFromEnv("DB_PORT", port, Integer.class));

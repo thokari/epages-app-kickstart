@@ -31,10 +31,10 @@ public class EpagesApiClientVerticle extends AbstractVerticle {
 
             String requestUrl = null;
             switch (action) {
-                case "shop-info" :
+                case "shop-info":
                     requestUrl = apiUrl;
                     break;
-                case "singlesignon" :
+                case "singlesignon":
                     requestUrl = apiUrl + "/singlesignon";
                     break;
             }
@@ -46,7 +46,7 @@ public class EpagesApiClientVerticle extends AbstractVerticle {
             makeApiRequest(finalRequestUrl, token).setHandler(response -> {
                 if (response.failed()) {
                     String errorMsg = String.format("API request to '%s' failed because of '%s'", finalRequestUrl,
-                        response.cause().getMessage());
+                            response.cause().getMessage());
                     LOG.error(errorMsg);
                     message.fail(500, errorMsg);
                 } else {
@@ -73,15 +73,15 @@ public class EpagesApiClientVerticle extends AbstractVerticle {
 
         boolean useSsl = "https".equals(url.getProtocol());
         RequestOptions options = new RequestOptions()
-            .setSsl(useSsl)
-            .setPort(url.getPort() != -1 ? url.getPort() : (useSsl ? 443 : 80))
-            .setHost(url.getHost())
-            .setURI(url.getPath());
+                .setSsl(useSsl)
+                .setPort(url.getPort() != -1 ? url.getPort() : (useSsl ? 443 : 80))
+                .setHost(url.getHost())
+                .setURI(url.getPath());
 
         HttpClientRequest request = client.get(options, response -> {
             response.exceptionHandler(exception -> future.fail(exception));
             Boolean responseIsOk = String.valueOf(response.statusCode()).startsWith("2")
-                || String.valueOf(response.statusCode()).startsWith("3");
+                    || String.valueOf(response.statusCode()).startsWith("3");
             response.bodyHandler(body -> {
                 if (responseIsOk) {
                     future.complete(body.toJsonObject());

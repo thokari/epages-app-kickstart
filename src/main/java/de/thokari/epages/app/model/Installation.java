@@ -35,9 +35,9 @@ public class Installation extends Model {
 
     @JsonCreator
     public Installation(@JsonProperty("api_url") String apiUrl, @JsonProperty("access_token") String accessToken,
-        @JsonProperty("shop_name") String shopName, @JsonProperty("email") String email,
-        @JsonProperty("email_confirmed") Boolean emailConfirmed,
-        @JsonProperty("created") String created) {
+                        @JsonProperty("shop_name") String shopName, @JsonProperty("email") String email,
+                        @JsonProperty("email_confirmed") Boolean emailConfirmed,
+                        @JsonProperty("created") String created) {
 
         this.apiUrl = apiUrl;
         this.accessToken = accessToken;
@@ -61,26 +61,26 @@ public class Installation extends Model {
     @JsonIgnore
     public String getParameterPart() {
         return this.toJsonObject().stream()
-            .filter(it -> it.getValue() != null)
-            .map(it -> "?")
-            .collect(Collectors.joining(", ", "(", ")"));
+                .filter(it -> it.getValue() != null)
+                .map(it -> "?")
+                .collect(Collectors.joining(", ", "(", ")"));
     }
 
     @JsonIgnore
     public String getColumnNames() {
         return this.toJsonObject().stream()
-            .filter(it -> it.getValue() != null)
-            .map(it -> it.getKey())
-            .collect(Collectors.joining(", ", "(", ")"));
+                .filter(it -> it.getValue() != null)
+                .map(it -> it.getKey())
+                .collect(Collectors.joining(", ", "(", ")"));
     }
 
     @JsonIgnore
     public JsonArray getInsertQueryParams() {
         return new JsonArray(
-            this.toJsonObject().stream()
-                .filter(it -> it.getValue() != null)
-                .map(it -> it.getValue())
-                .collect(Collectors.toList()));
+                this.toJsonObject().stream()
+                        .filter(it -> it.getValue() != null)
+                        .map(it -> it.getValue())
+                        .collect(Collectors.toList()));
     }
 
 }
