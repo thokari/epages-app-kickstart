@@ -78,13 +78,12 @@ public class AppInstallationVerticleTest {
         }).listen(apiMockPort, apiMockStarted);
 
         apiClientMock = vertx.eventBus().consumer(EpagesApiClientVerticle.EVENT_BUS_ADDRESS, message -> {
-            if ("shop-info".equals(message.body().getString("action"))) {
+            if ("get-shop-info".equals(message.body().getString("action"))) {
                 message.reply(new JsonObject().put("name", "Milestones"));
             } else {
-                message.fail(500, "could not get shop info");
+                message.fail(500, String.format("API request to '%s' failed", apiMockUrl));
             }
         });
-
     }
 
     @After
@@ -236,6 +235,52 @@ public class AppInstallationVerticleTest {
                             // THEN
                             context.assertTrue(response.failed());
                             String expectedMessage = "could not get token for event";
+                            String actualMessage = response.cause().getMessage().substring(0, expectedMessage.length());
+                            context.assertEquals(expectedMessage, actualMessage);
+                            async.complete();
+                        });
+            });
+        });
+        async.awaitSuccess(2000);
+    }
+
+    @Test
+    public void testShopInfoError(TestContext context) {
+        Async async = context.async();
+
+        // GIVEN
+
+        apiClientMock.unregister();
+        apiClientMock = vertx.eventBus().consumer(EpagesApiClientVerticle.EVENT_BUS_ADDRESS, message -> {
+            if ("get-shop-info".equals(message.body().getString("action"))) {
+                message.fail(500, String.format("API request to '%s' failed", apiMockUrl));
+            }
+        });
+
+        databasePrepared.setHandler(started -> {
+            if (started.failed()) {
+                started.cause().printStackTrace();
+                context.fail();
+                async.complete();
+            }
+
+            vertx.deployVerticle(AppInstallationVerticle.class.getName(), deploymentOpts, deployed -> {
+                if (deployed.failed()) {
+                    deployed.cause().printStackTrace();
+                    context.fail();
+                    async.complete();
+                }
+
+                // WHEN
+
+                vertx.eventBus().<JsonObject>send(
+                        AppInstallationVerticle.EVENT_BUS_ADDRESS,
+                        installationEvent.toJsonObject(),
+                        response -> {
+
+                            // THEN
+                            context.assertTrue(response.failed());
+                            String expectedMessage = String.format("API request to '%s' failed", apiMockUrl);
                             String actualMessage = response.cause().getMessage().substring(0, expectedMessage.length());
                             context.assertEquals(expectedMessage, actualMessage);
                             async.complete();

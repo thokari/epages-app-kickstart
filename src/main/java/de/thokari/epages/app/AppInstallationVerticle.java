@@ -44,11 +44,7 @@ public class AppInstallationVerticle extends AbstractVerticle {
             message.fail(400, errorMsg);
         } else {
             LOG.info("received installation event " + event.toString());
-            OAuth2ClientOptions oAuth2ClientOptions = new OAuth2ClientOptions()
-                    .setFlow(OAuth2FlowType.AUTH_CODE)
-                    .setClientID(clientId).setClientSecret(clientSecret)
-                    .setSite(event.apiUrl).setTokenPath(event.tokenPath);
-            requestOAuth2Token(oAuth2ClientOptions, event.code, event.returnUrl).otherwise(error -> {
+            requestOAuth2Token(clientId, clientSecret, event).otherwise(error -> {
                 String errorMsg = String.format("could not get token for event '%s' because of '%s'",
                         event.toString(), error.getMessage());
                 LOG.error(errorMsg);
@@ -56,18 +52,22 @@ public class AppInstallationVerticle extends AbstractVerticle {
                 return null;
             }).compose(accessToken -> {
                 String tokenValue = accessToken.principal().getString("access_token");
-                LOG.info(String.format("obtained access token '%s' for API URL '%s'", tokenValue, event.apiUrl));
-
-                JsonObject shopInfo = new JsonObject().put("shop_name", "Milestones");
-                createInstallation(tokenValue, shopInfo, event).otherwise(error -> {
-                    String errorMsg = String.format(
-                            "could not create installation for event '%s' because of '%s'",
-                            event.toString(), error.getMessage());
-                    LOG.error(errorMsg);
-                    message.fail(500, errorMsg);
+                LOG.debug(String.format("obtained access token '%s' for API URL '%s'", tokenValue, event.apiUrl));
+                getShopInfo(tokenValue, event).otherwise(error -> {
+                    message.fail(500, error.getMessage());
                     return null;
-                }).compose(installationResult -> {
-                    message.reply(installationResult);
+                }).compose(shopInfo -> {
+                    createInstallation(tokenValue, shopInfo, event).otherwise(error -> {
+                        String errorMsg = String.format(
+                                "could not create installation for event '%s' because of '%s'",
+                                event.toString(), error.getMessage());
+                        LOG.error(errorMsg);
+                        message.fail(500, errorMsg);
+                        return null;
+                    }).compose(installationResult -> {
+                        message.reply(installationResult);
+                        return null;
+                    });
                     return null;
                 });
                 return null;
@@ -75,18 +75,40 @@ public class AppInstallationVerticle extends AbstractVerticle {
         }
     }
 
-    private Future<AccessToken> requestOAuth2Token(OAuth2ClientOptions options, String code, String returnUrl) {
+    private Future<AccessToken> requestOAuth2Token(String clientId, String clientSecret, InstallationRequest request) {
         Promise<AccessToken> promise = Promise.promise();
+        OAuth2ClientOptions options = new OAuth2ClientOptions()
+                .setFlow(OAuth2FlowType.AUTH_CODE)
+                .setClientID(clientId).setClientSecret(clientSecret)
+                .setSite(request.apiUrl).setTokenPath(request.tokenPath);
         OAuth2Auth oAuth2 = OAuth2Auth.create(vertx, options);
-        JsonObject tokenParameters = new JsonObject().put("code", code).put("redirect_uri", returnUrl);
+        JsonObject tokenParameters = new JsonObject()
+                .put("code", request.code)
+                .put("redirect_uri", request.returnUrl);
         oAuth2.getToken(tokenParameters, promise);
         return promise.future();
     }
 
-    private Future<JsonObject> createInstallation(String accessToken, JsonObject shopInfo, InstallationRequest event) {
+    private Future<JsonObject> createInstallation(String accessToken, JsonObject shopInfo, InstallationRequest request) {
         Promise<JsonObject> promise = Promise.promise();
-        Installation installation = new Installation(event.apiUrl, accessToken, shopInfo.getString("shop_name"));
+        Installation installation = new Installation(request.apiUrl, accessToken, shopInfo.getString("shop_name"));
         saveInstallation(installation).setHandler(promise);
+        return promise.future();
+    }
+
+    private Future<JsonObject> getShopInfo(String accessToken, InstallationRequest event) {
+        Promise<JsonObject> promise = Promise.promise();
+        JsonObject apiRequest = new JsonObject()
+                .put("action", "get-shop-info")
+                .put("apiUrl", event.apiUrl)
+                .put("token", accessToken);
+        vertx.eventBus().<JsonObject>request(EpagesApiClientVerticle.EVENT_BUS_ADDRESS, apiRequest, result -> {
+           if (result.succeeded()) {
+               promise.complete(result.result().body());
+           } else {
+               promise.fail(result.cause().getMessage());
+           }
+        });
         return promise.future();
     }
 
