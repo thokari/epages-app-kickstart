@@ -4,6 +4,7 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.RequestOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
@@ -28,22 +29,27 @@ public class EpagesApiClientVerticle extends AbstractVerticle {
             String action = payload.getString("action");
             String apiUrl = payload.getString("apiUrl");
             String token = payload.getString("token");
+            JsonObject body = payload.getJsonObject("body");
 
             String requestUrl = null;
+            String contentType = null;
+            HttpMethod httpMethod = HttpMethod.GET;
             switch (action) {
-                case "shop-info":
+                case "get-shop-info":
                     requestUrl = apiUrl;
                     break;
-                case "singlesignon":
-                    requestUrl = apiUrl + "/singlesignon";
+                case "post-script-tag":
+                    requestUrl = apiUrl + "/script-tags";
+                    httpMethod = HttpMethod.POST;
+                    contentType = "application/json";
                     break;
             }
 
             final String finalRequestUrl = requestUrl;
 
-            LOG.info(String.format("Requesting API at '%s'", finalRequestUrl));
+            LOG.info(String.format("requesting API at '%s'", finalRequestUrl));
 
-            makeApiRequest(finalRequestUrl, token).setHandler(response -> {
+            makeApiRequest(httpMethod, finalRequestUrl, token, body, contentType).setHandler(response -> {
                 if (response.failed()) {
                     String errorMsg = String.format("API request to '%s' failed because of '%s'", finalRequestUrl,
                             response.cause().getMessage());
@@ -56,12 +62,7 @@ public class EpagesApiClientVerticle extends AbstractVerticle {
         });
     }
 
-    @SuppressWarnings("unused")
-    private Future<JsonObject> makeApiRequest(String apiUrl) {
-        return makeApiRequest(apiUrl, null);
-    }
-
-    private Future<JsonObject> makeApiRequest(String apiUrl, String token) {
+    private Future<JsonObject> makeApiRequest(HttpMethod method, String apiUrl, String token, Object postBody, String contentType) {
         Future<JsonObject> future = Future.future();
 
         URL url = null;
@@ -78,7 +79,8 @@ public class EpagesApiClientVerticle extends AbstractVerticle {
                 .setHost(url.getHost())
                 .setURI(url.getPath());
 
-        HttpClientRequest request = client.get(options, response -> {
+        HttpClientRequest request = client.request(method, options);
+        request.handler(response -> {
             response.exceptionHandler(exception -> future.fail(exception));
             Boolean responseIsOk = String.valueOf(response.statusCode()).startsWith("2")
                     || String.valueOf(response.statusCode()).startsWith("3");
@@ -90,6 +92,13 @@ public class EpagesApiClientVerticle extends AbstractVerticle {
                 }
             });
         });
+        if (HttpMethod.POST == method) {
+            request.headers().add("Content-Length", String.valueOf(postBody.toString().length()));
+            request.write(postBody.toString());
+            if (contentType != null) {
+                request.headers().add("Content-Type", contentType);
+            }
+        }
         if (token != null) {
             request.headers().add("Authorization", "Bearer " + token);
         }

@@ -1,8 +1,10 @@
 build/
 deploy/
+certs/
 .gradle/
 .vertx/
 bin/
+out/
 .project
 .classpath
 .settings/
@@ -10,3 +12,4 @@ bin/
 *.iml
 *.iws
 .DS_Store
+**/Scratchpad.*

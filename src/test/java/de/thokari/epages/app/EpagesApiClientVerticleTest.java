@@ -29,7 +29,7 @@ public class EpagesApiClientVerticleTest {
     final String apiMockUrl = "http://localhost:" + apiMockPort + "/api";
     final String token = "Q9T6g8td0lHzQbIg9CwgRNCrU1SfCko4";
     final JsonObject apiCall = new JsonObject()
-            .put("action", "shop-info")
+            .put("action", "get-shop-info")
             .put("token", token)
             .put("apiUrl", apiMockUrl);
     final Vertx vertx = Vertx.vertx();
