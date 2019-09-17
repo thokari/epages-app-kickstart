@@ -1,6 +1,7 @@
 package de.thokari.epages.app;
 
 import de.thokari.epages.app.model.AppConfig;
+import de.thokari.epages.app.model.Installation;
 import de.thokari.epages.app.model.InstallationRequest;
 import de.thokari.epages.app.model.Model;
 import io.vertx.core.CompositeFuture;
@@ -27,6 +28,8 @@ import java.nio.file.Paths;
 
 @RunWith(VertxUnitRunner.class)
 public class AppInstallationVerticleTest {
+
+    static final String SHOP_NAME = "Test shop";
 
     static JsonObject configJson;
     static AppConfig appConfig;
@@ -79,7 +82,7 @@ public class AppInstallationVerticleTest {
 
         apiClientMock = vertx.eventBus().consumer(EpagesApiClientVerticle.EVENT_BUS_ADDRESS, message -> {
             if ("get-shop-info".equals(message.body().getString("action"))) {
-                message.reply(new JsonObject().put("name", "Milestones"));
+                message.reply(new JsonObject().put("name", SHOP_NAME));
             } else {
                 message.fail(500, String.format("API request to '%s' failed", apiMockUrl));
             }
@@ -142,16 +145,17 @@ public class AppInstallationVerticleTest {
                                     async.complete();
                                 }
                                 connected.result().query(
-                                        String.format("SELECT access_token FROM installations WHERE api_url = '%s'",
+                                        String.format("SELECT * FROM installations WHERE api_url = '%s'",
                                                 installationEvent.apiUrl),
                                         result -> {
                                             if (result.failed()) {
                                                 result.cause().printStackTrace();
                                                 context.fail();
                                             }
-                                            context.assertEquals(tokenResponse.getString("access_token"),
-                                                    result.result().getResults().get(0).getValue(0));
                                             context.assertEquals(1, result.result().getNumRows());
+                                            Installation installation = Model.fromJsonObject(result.result().getRows().get(0), Installation.class);
+                                            context.assertEquals(tokenResponse.getString("access_token"), installation.accessToken);
+                                            context.assertEquals(SHOP_NAME, installation.shopName);
                                             async.complete();
                                         });
                             });

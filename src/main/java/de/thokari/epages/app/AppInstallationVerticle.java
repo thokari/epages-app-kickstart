@@ -91,7 +91,7 @@ public class AppInstallationVerticle extends AbstractVerticle {
 
     private Future<JsonObject> createInstallation(String accessToken, JsonObject shopInfo, InstallationRequest request) {
         Promise<JsonObject> promise = Promise.promise();
-        Installation installation = new Installation(request.apiUrl, accessToken, shopInfo.getString("shop_name"));
+        Installation installation = new Installation(request.apiUrl, accessToken, shopInfo.getString("name"));
         saveInstallation(installation).setHandler(promise);
         return promise.future();
     }
