@@ -35,13 +35,17 @@ dependencies {
     testCompile "io.vertx:vertx-unit:${vertxVersion}"
     testCompile 'com.github.stefanbirkner:system-rules:1.16.0'
 
-    runtime 'ch.qos.logback:logback-classic:1.2.2'
+    runtime 'ch.qos.logback:logback-classic:1.2.3'
+    runtime 'ch.qos.logback:logback-core:1.2.3'
+    compile 'org.slf4j:slf4j-api:1.7.28'
 }
 
 ext {
     configFileName = project.hasProperty('configFileName') ? project.getProperty('configFileName') : 'config.test.json'
     configFile = file configFileName
     databaseConfig = new groovy.json.JsonSlurper().parse(configFile).database
+
+    // not used currently, instead the SLF4J factory / logger is imported and used directly
     vertxLoggingSystemProperties = [
         "vertx.logger-delegate-factory-class-name": "io.vertx.core.logging.SLF4JLogDelegateFactory"
     ]
@@ -63,7 +67,7 @@ run {
         "--redeploy=$watchForChange",
         "--on-redeploy=$doOnChange"
     ]
-    systemProperties = vertxLoggingSystemProperties
+    // systemProperties = vertxLoggingSystemProperties
     doFirst {
         println "Using arguments: ${args}"
     }
@@ -87,7 +91,7 @@ shadowJar {
 
 test {
     dependsOn flywayClean, flywayMigrate
-    systemProperties = vertxLoggingSystemProperties
+    // systemProperties = vertxLoggingSystemProperties
 }
 
 [jar, assembleDist, distTar, distZip, installDist]*.enabled = false

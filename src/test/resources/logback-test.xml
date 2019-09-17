@@ -10,6 +10,9 @@
         <appender-ref ref="STDOUT"/>
     </root>
 
-    <logger name="de.thokari.epages.app" level="DEBUG" additivity="false"/>
+    <logger name="de.thokari.epages.app" level="DEBUG"/>
+
+    <logger name="io.netty" level="INFO"/>
+    <logger name="com.github.mauricio.async.db.postgresql" level="INFO"/>
 
 </configuration>
