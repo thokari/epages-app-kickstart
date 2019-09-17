@@ -8,6 +8,7 @@ import io.vertx.core.json.JsonArray;
 
 import java.sql.Timestamp;
 import java.util.Date;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Installation extends Model {
@@ -28,7 +29,7 @@ public class Installation extends Model {
     public String email;
 
     @JsonProperty("email_confirmed")
-    public Boolean emailConfirmed = false;
+    public Boolean emailConfirmed;
 
     @JsonProperty("created")
     public String created;
@@ -70,7 +71,7 @@ public class Installation extends Model {
     public String getColumnNames() {
         return this.toJsonObject().stream()
                 .filter(it -> it.getValue() != null)
-                .map(it -> it.getKey())
+                .map(Map.Entry::getKey)
                 .collect(Collectors.joining(", ", "(", ")"));
     }
 
@@ -79,7 +80,7 @@ public class Installation extends Model {
         return new JsonArray(
                 this.toJsonObject().stream()
                         .filter(it -> it.getValue() != null)
-                        .map(it -> it.getValue())
+                        .map(Map.Entry::getValue)
                         .collect(Collectors.toList()));
     }
 

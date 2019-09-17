@@ -9,6 +9,7 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.SelfSignedCertificate;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -39,7 +40,7 @@ public class HttpServerVerticle extends AbstractVerticle {
             }
 
             if (event != null) {
-                vertx.eventBus().<JsonObject>send(
+                vertx.eventBus().<JsonObject>request(
                         AppInstallationVerticle.EVENT_BUS_ADDRESS, event.toJsonObject(), reply -> {
 
                             if (reply.failed()) {
@@ -55,9 +56,7 @@ public class HttpServerVerticle extends AbstractVerticle {
         });
 
         Router apiRouter = Router.router(vertx);
-        apiRouter.route(GET, "/*").handler(ctx -> {
-            ctx.response().end("version: 0.1");
-        });
+        apiRouter.route(GET, "/*").handler(ctx -> ctx.response().end("version: 0.1"));
 
         mainRouter.mountSubRouter(appConfig.appApiPath, apiRouter);
 
@@ -65,12 +64,20 @@ public class HttpServerVerticle extends AbstractVerticle {
         mainRouter.route(appConfig.appStaticPath + "/*").handler(staticHandler);
 
         HttpServerOptions serverOptions = new HttpServerOptions();
-        if ("https".equals(appConfig.appProtocol)) {
-            SelfSignedCertificate certificate = SelfSignedCertificate.create();
-            serverOptions.setSsl(true).setKeyCertOptions(certificate.keyCertOptions());
+        if (appConfig.appUseSsl) {
+            serverOptions.setSsl(true);
+            if (appConfig.appCertSelfSigned) {
+                SelfSignedCertificate certificate = SelfSignedCertificate.create();
+                serverOptions.setKeyCertOptions(certificate.keyCertOptions());
+            } else {
+                PemKeyCertOptions certOptions = new PemKeyCertOptions()
+                        .setKeyPath(String.format("/Users/thomashirsch/git/epages-app-kickstart/certs/_.%s.key", appConfig.appDomain))
+                        .setCertPath(String.format("/Users/thomashirsch/git/epages-app-kickstart/certs/_.%s.crt", appConfig.appDomain));
+                serverOptions.setPemKeyCertOptions(certOptions);
+            }
         }
         HttpServer server = vertx.createHttpServer(serverOptions);
 
-        server.requestHandler(mainRouter::accept).listen(appConfig.appPort, appConfig.appHostname);
+        server.requestHandler(mainRouter).listen(appConfig.appPort, appConfig.getFqdn());
     }
 }

@@ -5,7 +5,7 @@ import de.thokari.epages.app.model.InstallationRequest;
 import de.thokari.epages.app.model.Model;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.http.HttpServer;
@@ -45,8 +45,8 @@ public class AppInstallationVerticleTest {
             .put("access_token", "4HZ9hriF6J3GOnd10JbFzdVehycOvAZf");
     final Vertx vertx = Vertx.vertx();
     final DeploymentOptions deploymentOpts = new DeploymentOptions().setConfig(configJson);
-    final Future<HttpServer> apiMockStarted = Future.future();
-    final Future<Void> databasePrepared = Future.future();
+    final Promise<HttpServer> apiMockStarted = Promise.promise();
+    final Promise<Void> databasePrepared = Promise.promise();
     AsyncSQLClient dbClient;
     HttpServer apiMock;
     MessageConsumer<JsonObject> apiClientMock;
@@ -89,15 +89,17 @@ public class AppInstallationVerticleTest {
     @After
     public void stopApiMockAndDatabase(TestContext context) {
         Async async = context.async();
-        Future<Void> apiMockClosed = Future.future();
-        Future<Void> dbClientClosed = Future.future();
-        Future<Void> apiClientMockClosed = Future.future();
+        Promise<Void> apiMockClosed = Promise.promise();
+        Promise<Void> dbClientClosed = Promise.promise();
+        Promise<Void> apiClientMockClosed = Promise.promise();
         apiMock.close(apiMockClosed);
         dbClient.close(dbClientClosed);
         apiClientMock.unregister(apiClientMockClosed);
-        CompositeFuture.all(apiMockClosed, dbClientClosed, apiClientMockClosed).setHandler(closed -> {
-            async.complete();
-        });
+        CompositeFuture.all(
+                apiMockClosed.future(),
+                dbClientClosed.future(),
+                apiClientMockClosed.future()
+        ).setHandler(closed -> async.complete());
         async.awaitSuccess(1000);
     }
 
@@ -107,7 +109,7 @@ public class AppInstallationVerticleTest {
 
         // GIVEN
 
-        CompositeFuture.all(apiMockStarted, databasePrepared).setHandler(started -> {
+        CompositeFuture.all(apiMockStarted.future(), databasePrepared.future()).setHandler(started -> {
             if (started.failed()) {
                 started.cause().printStackTrace();
                 context.fail();
@@ -123,7 +125,7 @@ public class AppInstallationVerticleTest {
 
                 // WHEN
 
-                vertx.eventBus().<JsonObject>send(
+                vertx.eventBus().<JsonObject>request(
                         AppInstallationVerticle.EVENT_BUS_ADDRESS,
                         installationEvent.toJsonObject(),
                         response -> {
@@ -165,7 +167,7 @@ public class AppInstallationVerticleTest {
 
         // GIVEN
 
-        CompositeFuture.all(apiMockStarted, databasePrepared).setHandler(started -> {
+        CompositeFuture.all(apiMockStarted.future(), databasePrepared.future()).setHandler(started -> {
             if (started.failed()) {
                 started.cause().printStackTrace();
                 context.fail();
@@ -185,7 +187,7 @@ public class AppInstallationVerticleTest {
 
                 // WHEN
 
-                vertx.eventBus().<JsonObject>send(
+                vertx.eventBus().<JsonObject>request(
                         AppInstallationVerticle.EVENT_BUS_ADDRESS,
                         installationEvent.toJsonObject(),
                         response -> {
@@ -208,10 +210,10 @@ public class AppInstallationVerticleTest {
 
         // GIVEN
 
-        Future<Void> apiMockClosed = Future.future();
-        apiMockStarted.setHandler(started -> apiMock.close(apiMockClosed));
+        Promise<Void> apiMockClosed = Promise.promise();
+        apiMockStarted.future().setHandler(started -> apiMock.close(apiMockClosed));
 
-        CompositeFuture.all(apiMockClosed, databasePrepared).setHandler(started -> {
+        CompositeFuture.all(apiMockClosed.future(), databasePrepared.future()).setHandler(started -> {
             if (started.failed()) {
                 started.cause().printStackTrace();
                 context.fail();
@@ -227,7 +229,7 @@ public class AppInstallationVerticleTest {
 
                 // WHEN
 
-                vertx.eventBus().<JsonObject>send(
+                vertx.eventBus().<JsonObject>request(
                         AppInstallationVerticle.EVENT_BUS_ADDRESS,
                         installationEvent.toJsonObject(),
                         response -> {
@@ -257,7 +259,7 @@ public class AppInstallationVerticleTest {
             }
         });
 
-        databasePrepared.setHandler(started -> {
+        databasePrepared.future().setHandler(started -> {
             if (started.failed()) {
                 started.cause().printStackTrace();
                 context.fail();
@@ -273,7 +275,7 @@ public class AppInstallationVerticleTest {
 
                 // WHEN
 
-                vertx.eventBus().<JsonObject>send(
+                vertx.eventBus().<JsonObject>request(
                         AppInstallationVerticle.EVENT_BUS_ADDRESS,
                         installationEvent.toJsonObject(),
                         response -> {

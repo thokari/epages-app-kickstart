@@ -10,8 +10,6 @@ import io.vertx.core.Promise;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.asyncsql.AsyncSQLClient;
 import io.vertx.ext.asyncsql.PostgreSQLClient;
 import io.vertx.ext.auth.oauth2.AccessToken;
@@ -19,6 +17,8 @@ import io.vertx.ext.auth.oauth2.OAuth2Auth;
 import io.vertx.ext.auth.oauth2.OAuth2ClientOptions;
 import io.vertx.ext.auth.oauth2.OAuth2FlowType;
 import io.vertx.ext.sql.SQLConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AppInstallationVerticle extends AbstractVerticle {
 
@@ -43,7 +43,7 @@ public class AppInstallationVerticle extends AbstractVerticle {
             LOG.error(errorMsg);
             message.fail(400, errorMsg);
         } else {
-            LOG.info("received installation event " + event.toString());
+            LOG.debug("received installation event {}", event.toString());
             requestOAuth2Token(clientId, clientSecret, event).otherwise(error -> {
                 String errorMsg = String.format("could not get token for event '%s' because of '%s'",
                         event.toString(), error.getMessage());
@@ -52,7 +52,7 @@ public class AppInstallationVerticle extends AbstractVerticle {
                 return null;
             }).compose(accessToken -> {
                 String tokenValue = accessToken.principal().getString("access_token");
-                LOG.debug(String.format("obtained access token '%s' for API URL '%s'", tokenValue, event.apiUrl));
+                LOG.debug("obtained access token '{}' for API URL '{}'", tokenValue, event.apiUrl);
                 getShopInfo(tokenValue, event).otherwise(error -> {
                     message.fail(500, error.getMessage());
                     return null;
@@ -103,11 +103,11 @@ public class AppInstallationVerticle extends AbstractVerticle {
                 .put("apiUrl", event.apiUrl)
                 .put("token", accessToken);
         vertx.eventBus().<JsonObject>request(EpagesApiClientVerticle.EVENT_BUS_ADDRESS, apiRequest, result -> {
-           if (result.succeeded()) {
-               promise.complete(result.result().body());
-           } else {
-               promise.fail(result.cause().getMessage());
-           }
+            if (result.succeeded()) {
+                promise.complete(result.result().body());
+            } else {
+                promise.fail(result.cause().getMessage());
+            }
         });
         return promise.future();
     }
@@ -122,13 +122,13 @@ public class AppInstallationVerticle extends AbstractVerticle {
                 String sql = installation.getInsertQuery();
                 JsonArray params = installation.getInsertQueryParams();
 
-                LOG.debug(String.format("executing query '%s' with parameters '%s'", sql, params.encode()));
+                LOG.debug("executing query '{}' with parameters '{}'", sql, params.encode());
 
                 connection.queryWithParams(sql, params, queryResult -> {
                     if (queryResult.failed()) {
                         promise.fail(queryResult.cause().getMessage());
                     } else {
-                        LOG.info(String.format("installation '%s' saved", installation.toJsonObject().toString()));
+                        LOG.info("installation '{}' saved", installation.toJsonObject().toString());
                         promise.complete();
                     }
                     connection.close();

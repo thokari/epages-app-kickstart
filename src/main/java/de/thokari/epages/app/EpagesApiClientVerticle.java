@@ -2,13 +2,14 @@ package de.thokari.epages.app;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.RequestOptions;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -47,7 +48,7 @@ public class EpagesApiClientVerticle extends AbstractVerticle {
 
             final String finalRequestUrl = requestUrl;
 
-            LOG.info(String.format("requesting API at '%s'", finalRequestUrl));
+            LOG.info("requesting API at '{}'", finalRequestUrl);
 
             makeApiRequest(httpMethod, finalRequestUrl, token, body, contentType).setHandler(response -> {
                 if (response.failed()) {
@@ -63,13 +64,13 @@ public class EpagesApiClientVerticle extends AbstractVerticle {
     }
 
     private Future<JsonObject> makeApiRequest(HttpMethod method, String apiUrl, String token, Object postBody, String contentType) {
-        Future<JsonObject> future = Future.future();
+        Promise<JsonObject> promise = Promise.promise();
 
         URL url = null;
         try {
             url = new URL(apiUrl);
         } catch (MalformedURLException malformedUrl) {
-            future.fail(malformedUrl);
+            promise.fail(malformedUrl);
         }
 
         boolean useSsl = "https".equals(url.getProtocol());
@@ -81,14 +82,15 @@ public class EpagesApiClientVerticle extends AbstractVerticle {
 
         HttpClientRequest request = client.request(method, options);
         request.handler(response -> {
-            response.exceptionHandler(exception -> future.fail(exception));
+            response.exceptionHandler(promise::fail);
             Boolean responseIsOk = String.valueOf(response.statusCode()).startsWith("2")
                     || String.valueOf(response.statusCode()).startsWith("3");
             response.bodyHandler(body -> {
+                LOG.debug("received response code '{}', body '{}'", response.statusCode(), body.toString());
                 if (responseIsOk) {
-                    future.complete(body.toJsonObject());
+                    promise.complete(body.toJsonObject());
                 } else {
-                    future.fail(body.toString());
+                    promise.fail(body.toString());
                 }
             });
         });
@@ -102,9 +104,9 @@ public class EpagesApiClientVerticle extends AbstractVerticle {
         if (token != null) {
             request.headers().add("Authorization", "Bearer " + token);
         }
-        request.exceptionHandler(exception -> future.fail(exception));
+        request.exceptionHandler(promise::fail);
         request.end();
 
-        return future;
+        return promise.future();
     }
 }

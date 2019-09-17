@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.vertx.core.MultiMap;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -73,7 +73,7 @@ public class InstallationRequest extends Model {
         try {
             signature = URLDecoder.decode(urlEncodedSignature, "utf-8");
         } catch (UnsupportedEncodingException e) {
-            LOG.error("Something went wrong because of a programming error");
+            LOG.error("something went wrong because of a programming error");
         }
 
         // TODO why is this missing in the response?
@@ -91,10 +91,9 @@ public class InstallationRequest extends Model {
             mac = Mac.getInstance(algorithm);
             mac.init(new SecretKeySpec(secret.getBytes(encoding), algorithm));
         } catch (NoSuchAlgorithmException | InvalidKeyException | UnsupportedEncodingException e) {
-            LOG.error("Signature validation failed because of programming error", e);
+            LOG.error("signature validation failed because of programming error", e);
             return null;
         }
-
         byte[] rawSignature = mac.doFinal((this.code + ":" + this.accessTokenUrl).getBytes());
         return Base64.getEncoder().encodeToString(rawSignature);
     }
@@ -102,6 +101,7 @@ public class InstallationRequest extends Model {
     @JsonIgnore
     public Boolean hasValidSignature(String secret) {
         String signature = calculateSignature(secret);
+        LOG.trace("calculated signature '{}'", signature);
         return this.signature.equals(signature);
     }
 }

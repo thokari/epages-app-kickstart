@@ -3,7 +3,7 @@ package de.thokari.epages.app;
 import de.thokari.epages.app.model.AppConfig;
 import de.thokari.epages.app.model.Model;
 import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.ReplyException;
 import io.vertx.core.http.HttpServer;
@@ -36,7 +36,7 @@ public class EpagesApiClientVerticleTest {
     // .put("apiUrl",
     // "https://devshop.epages.com/rs/shops/epagesdevD20161020T212339R164");
     final DeploymentOptions deploymentOpts = new DeploymentOptions().setConfig(configJson);
-    final Future<HttpServer> apiMockStarted = Future.future();
+    final Promise<HttpServer> apiMockStarted = Promise.promise();
     HttpServer apiMock;
 
     @BeforeClass
@@ -62,31 +62,28 @@ public class EpagesApiClientVerticleTest {
     public void testApiCallFailed(TestContext context) {
         Async async = context.async();
 
-        apiMockStarted.setHandler(started -> {
-            if (apiMockStarted.failed()) {
-                apiMockStarted.cause().printStackTrace();
+        apiMockStarted.future().setHandler(started -> {
+            if (apiMockStarted.future().failed()) {
+                apiMockStarted.future().cause().printStackTrace();
                 context.fail();
                 async.complete();
             }
 
-            apiMock.close(closed -> {
+            apiMock.close(closed -> vertx.deployVerticle(EpagesApiClientVerticle.class.getName(), deploymentOpts, deployed -> {
+                if (deployed.failed()) {
+                    deployed.cause().printStackTrace();
+                    context.fail();
+                    async.complete();
+                }
 
-                vertx.deployVerticle(EpagesApiClientVerticle.class.getName(), deploymentOpts, deployed -> {
-                    if (deployed.failed()) {
-                        deployed.cause().printStackTrace();
-                        context.fail();
-                        async.complete();
-                    }
-
-                    vertx.eventBus().<JsonObject>send(
-                            EpagesApiClientVerticle.EVENT_BUS_ADDRESS, apiCall, response -> {
-                                context.assertTrue(response.failed());
-                                context.assertTrue(response.cause().getMessage().startsWith(String.format("API request to '%s' failed because of 'Connection refused", apiMockUrl)));
-                                context.assertEquals(500, ((ReplyException) response.cause()).failureCode());
-                                async.complete();
-                            });
-                });
-            });
+                vertx.eventBus().<JsonObject>request(
+                        EpagesApiClientVerticle.EVENT_BUS_ADDRESS, apiCall, response -> {
+                            context.assertTrue(response.failed());
+                            context.assertTrue(response.cause().getMessage().startsWith(String.format("API request to '%s' failed because of 'Connection refused", apiMockUrl)));
+                            context.assertEquals(500, ((ReplyException) response.cause()).failureCode());
+                            async.complete();
+                        });
+            }));
         });
         async.awaitSuccess(2000);
     }
@@ -95,9 +92,9 @@ public class EpagesApiClientVerticleTest {
     public void testShopInfoCall(TestContext context) {
         Async async = context.async();
 
-        apiMockStarted.setHandler(started -> {
-            if (apiMockStarted.failed()) {
-                apiMockStarted.cause().printStackTrace();
+        apiMockStarted.future().setHandler(started -> {
+            if (apiMockStarted.future().failed()) {
+                apiMockStarted.future().cause().printStackTrace();
                 context.fail();
                 async.complete();
             }
@@ -109,7 +106,7 @@ public class EpagesApiClientVerticleTest {
                     async.complete();
                 }
 
-                vertx.eventBus().<JsonObject>send(
+                vertx.eventBus().<JsonObject>request(
                         EpagesApiClientVerticle.EVENT_BUS_ADDRESS, apiCall, response -> {
                             context.assertTrue(response.succeeded());
                             JsonObject body = response.result().body();
