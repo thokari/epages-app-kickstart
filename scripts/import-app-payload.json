@@ -18,7 +18,8 @@
         "provider": "epages",
         "businessUnit": "Distributor",
         "shopTypes": [
-            "Demo"
+            "Demo",
+            "UnityDemo"
         ]
     }],
     "callbackUrl": {
