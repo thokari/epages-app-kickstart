@@ -2,7 +2,6 @@
     "clientId": "epages-app-kickstart-client-id",
     "clientSecret": "epages-app-kickstart-client-secret",
     "appUseSsl": true,
-    "appCertSelfSigned": true,
     "appHostname": "localhost",
     "appDomain": "localdomain",
     "appPort": 8443,

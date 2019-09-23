@@ -15,10 +15,14 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.LoggerHandler;
 import io.vertx.ext.web.handler.StaticHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static io.vertx.core.http.HttpMethod.GET;
 
 public class HttpServerVerticle extends AbstractVerticle {
+
+    private static final Logger LOG = LoggerFactory.getLogger(EpagesAppMainVerticle.class);
 
     public void start() {
 
@@ -66,18 +70,18 @@ public class HttpServerVerticle extends AbstractVerticle {
         HttpServerOptions serverOptions = new HttpServerOptions();
         if (appConfig.appUseSsl) {
             serverOptions.setSsl(true);
-            if (appConfig.appCertSelfSigned) {
+            if (!appConfig.isCertificateConfigured()) {
+                LOG.warn("SSL key or certificate not configured, creating self signed certificate");
                 SelfSignedCertificate certificate = SelfSignedCertificate.create();
                 serverOptions.setKeyCertOptions(certificate.keyCertOptions());
             } else {
                 PemKeyCertOptions certOptions = new PemKeyCertOptions()
-                        .setKeyPath(String.format("/Users/thomashirsch/git/epages-app-kickstart/certs/_.%s.key", appConfig.appDomain))
-                        .setCertPath(String.format("/Users/thomashirsch/git/epages-app-kickstart/certs/_.%s.crt", appConfig.appDomain));
+                        .setKeyPath(appConfig.sslKeyFile)
+                        .setCertPath(appConfig.sslCertFile);
                 serverOptions.setPemKeyCertOptions(certOptions);
             }
         }
         HttpServer server = vertx.createHttpServer(serverOptions);
-
         server.requestHandler(mainRouter).listen(appConfig.appPort, appConfig.getFqdn());
     }
 }

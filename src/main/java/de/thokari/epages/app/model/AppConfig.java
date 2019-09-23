@@ -12,7 +12,9 @@ public class AppConfig extends Config {
 
     public Boolean appUseSsl;
 
-    public Boolean appCertSelfSigned;
+    public String sslKeyFile;
+
+    public String sslCertFile;
 
     public String appHostname;
 
@@ -33,7 +35,8 @@ public class AppConfig extends Config {
             @JsonProperty("clientId") String clientId,
             @JsonProperty("clientSecret") String clientSecret,
             @JsonProperty("appUseSsl") Boolean appUseSsl,
-            @JsonProperty("appCertSelfSigned") Boolean appCertSelfSigned,
+            @JsonProperty("sslKeyFile") String sslKeyFile,
+            @JsonProperty("sslCertFile") String sslCertFile,
             @JsonProperty("appHostname") String appHostname,
             @JsonProperty("appDomain") String appDomain,
             @JsonProperty("appPort") Integer appPort,
@@ -45,7 +48,8 @@ public class AppConfig extends Config {
         this.clientId = validate("clientId", overrideFromEnv("CLIENT_ID", clientId));
         this.clientSecret = validate("clientSecret", overrideFromEnv("CLIENT_SECRET", clientSecret));
         this.appUseSsl = validate("appUseSsl", overrideFromEnv("APP_USE_SSL", Boolean.valueOf(appUseSsl), Boolean.class));
-        this.appCertSelfSigned = validate("appCertSelfSigned", overrideFromEnv("APP_CERT_SELF_SIGNED", Boolean.valueOf(appCertSelfSigned), Boolean.class));
+        this.sslKeyFile = validate("sslKeyFile", overrideFromEnv("SSL_KEY_FILE", sslKeyFile));
+        this.sslCertFile = validate("sslCertFile", overrideFromEnv("SSL_CERT_FILE", sslCertFile));
         this.appHostname = validate("appHostname", overrideFromEnv("APP_HOSTNAME", appHostname));
         this.appDomain = validate("appDomain", overrideFromEnv("APP_DOMAIN", appDomain));
         this.appPort = validate("appPort", overrideFromEnv("APP_PORT", appPort, Integer.class));
@@ -58,5 +62,12 @@ public class AppConfig extends Config {
     @JsonIgnore
     public String getFqdn() {
         return String.format("%s.%s", appHostname, appDomain);
+    }
+
+    @JsonIgnore
+    public Boolean isCertificateConfigured() {
+        Boolean keyConfigured = sslKeyFile != null && !sslKeyFile.isEmpty();
+        Boolean certConfigured = sslCertFile != null && !sslCertFile.isEmpty();
+        return keyConfigured && certConfigured;
     }
 }
