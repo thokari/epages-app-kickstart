@@ -49,36 +49,36 @@ public class AppInstallationVerticle extends AbstractVerticle {
 
             requestOAuth2Token(clientId, clientSecret, request).setHandler(accessTokenResult -> {
                 if (accessTokenResult.failed()) {
-                    LOG.trace("OAuth token result handler failed");
+                    LOG.trace("OAuth token handler failed");
                     String errorMsg = format("could not get token for event '{}' because of '{}'",
                             request.toString(), accessTokenResult.cause().getMessage());
                     LOG.error(errorMsg);
                     message.fail(500, errorMsg);
                 } else {
-                    LOG.trace("OAuth token result handler successful");
+                    LOG.trace("OAuth token handler successful");
                     AccessToken accessToken = accessTokenResult.result();
                     String tokenValue = accessToken.principal().getString("access_token");
                     LOG.debug("obtained access token '{}' for API URL '{}'", tokenValue, request.apiUrl);
 
                     getShopInfo(tokenValue, request).setHandler(getShopInfoResult -> {
                         if (getShopInfoResult.failed()) {
-                            LOG.trace("shop info result handler failed");
+                            LOG.trace("shop info handler failed");
                             message.fail(500, getShopInfoResult.cause().getMessage());
                         } else {
-                            LOG.trace("shop info result handler successful");
+                            LOG.trace("shop info handler successful");
                             JsonObject shopInfo = getShopInfoResult.result();
 
                             createInstallation(tokenValue, shopInfo, request).setHandler(installationResult -> {
                                 if (installationResult.failed()) {
-                                    LOG.trace("save installation result handler failed");
+                                    LOG.trace("save installation handler failed");
                                     String errorMsg = String.format(
                                             "could not create installation for event '%s' because of '%s'",
                                             request.toString(), installationResult.cause().getMessage());
                                     LOG.error(errorMsg);
                                     message.fail(500, errorMsg);
                                 } else {
-                                    LOG.trace("save installation result handler successful");
-                                    message.reply(installationResult);
+                                    LOG.trace("save installation handler successful");
+                                    message.reply(installationResult.result());
                                 }
                             });
                         }

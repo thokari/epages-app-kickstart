@@ -4,6 +4,7 @@ import de.thokari.epages.app.model.AppConfig;
 import de.thokari.epages.app.model.InstallationRequest;
 import de.thokari.epages.app.model.Model;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.ReplyException;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
@@ -47,14 +48,14 @@ public class HttpServerVerticle extends AbstractVerticle {
                 vertx.eventBus().<JsonObject>request(
                         AppInstallationVerticle.EVENT_BUS_ADDRESS, event.toJsonObject(), reply -> {
                             if (reply.failed()) {
-                                LOG.trace("installation request reply handler failed");
+                                LOG.trace("installation request handler failed");
                                 ReplyException error = (ReplyException) reply.cause();
                                 String errorMsg = error.getMessage();
                                 LOG.error(errorMsg);
                                 int statusCode = error.failureCode();
                                 response.setStatusCode(statusCode).end(errorMsg);
                             } else {
-                                LOG.trace("installation request reply handler successful");
+                                LOG.trace("installation request handler successful");
                                 response.setStatusCode(302)
                                         .putHeader("Location", reply.result().body().getString("return_url"))
                                         .end();
