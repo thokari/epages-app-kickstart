@@ -46,14 +46,18 @@ public class HttpServerVerticle extends AbstractVerticle {
             if (event != null) {
                 vertx.eventBus().<JsonObject>request(
                         AppInstallationVerticle.EVENT_BUS_ADDRESS, event.toJsonObject(), reply -> {
-
                             if (reply.failed()) {
+                                LOG.trace("installation request reply handler failed");
                                 ReplyException error = (ReplyException) reply.cause();
                                 String errorMsg = error.getMessage();
+                                LOG.error(errorMsg);
                                 int statusCode = error.failureCode();
                                 response.setStatusCode(statusCode).end(errorMsg);
                             } else {
-                                response.setStatusCode(204).end();
+                                LOG.trace("installation request reply handler successful");
+                                response.setStatusCode(302)
+                                        .putHeader("Location", reply.result().body().getString("return_url"))
+                                        .end();
                             }
                         });
             }

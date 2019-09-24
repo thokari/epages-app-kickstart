@@ -20,6 +20,8 @@ import io.vertx.ext.sql.SQLConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.text.MessageFormat.format;
+
 public class AppInstallationVerticle extends AbstractVerticle {
 
     public static final String EVENT_BUS_ADDRESS = "app_installation";
@@ -37,40 +39,51 @@ public class AppInstallationVerticle extends AbstractVerticle {
     }
 
     private void replyToInstallationRequest(Message<JsonObject> message, String clientId, String clientSecret) {
-        InstallationRequest event = Model.fromJsonObject(message.body(), InstallationRequest.class);
-        if (!event.hasValidSignature(clientSecret)) {
-            String errorMsg = String.format("invalid signature on installation request '%s'", event.toString());
+        InstallationRequest request = Model.fromJsonObject(message.body(), InstallationRequest.class);
+        if (!request.hasValidSignature(clientSecret)) {
+            String errorMsg = format("invalid signature on installation request '{}'", request.toString());
             LOG.error(errorMsg);
             message.fail(400, errorMsg);
         } else {
-            LOG.debug("received installation event {}", event.toString());
-            requestOAuth2Token(clientId, clientSecret, event).otherwise(error -> {
-                String errorMsg = String.format("could not get token for event '%s' because of '%s'",
-                        event.toString(), error.getMessage());
-                LOG.error(errorMsg);
-                message.fail(500, errorMsg);
-                return null;
-            }).compose(accessToken -> {
-                String tokenValue = accessToken.principal().getString("access_token");
-                LOG.debug("obtained access token '{}' for API URL '{}'", tokenValue, event.apiUrl);
-                getShopInfo(tokenValue, event).otherwise(error -> {
-                    message.fail(500, error.getMessage());
-                    return null;
-                }).compose(shopInfo -> {
-                    createInstallation(tokenValue, shopInfo, event).otherwise(error -> {
-                        String errorMsg = String.format(
-                                "could not create installation for event '%s' because of '%s'",
-                                event.toString(), error.getMessage());
-                        LOG.error(errorMsg);
-                        message.fail(500, errorMsg);
-                        return null;
-                    }).compose(installationResult -> {
-                        message.reply(installationResult);
-                        return null;
+            LOG.debug("received installation event '{}'", request.toString());
+
+            requestOAuth2Token(clientId, clientSecret, request).setHandler(accessTokenResult -> {
+                if (accessTokenResult.failed()) {
+                    LOG.trace("OAuth token result handler failed");
+                    String errorMsg = format("could not get token for event '{}' because of '{}'",
+                            request.toString(), accessTokenResult.cause().getMessage());
+                    LOG.error(errorMsg);
+                    message.fail(500, errorMsg);
+                } else {
+                    LOG.trace("OAuth token result handler successful");
+                    AccessToken accessToken = accessTokenResult.result();
+                    String tokenValue = accessToken.principal().getString("access_token");
+                    LOG.debug("obtained access token '{}' for API URL '{}'", tokenValue, request.apiUrl);
+
+                    getShopInfo(tokenValue, request).setHandler(getShopInfoResult -> {
+                        if (getShopInfoResult.failed()) {
+                            LOG.trace("shop info result handler failed");
+                            message.fail(500, getShopInfoResult.cause().getMessage());
+                        } else {
+                            LOG.trace("shop info result handler successful");
+                            JsonObject shopInfo = getShopInfoResult.result();
+
+                            createInstallation(tokenValue, shopInfo, request).setHandler(installationResult -> {
+                                if (installationResult.failed()) {
+                                    LOG.trace("save installation result handler failed");
+                                    String errorMsg = String.format(
+                                            "could not create installation for event '%s' because of '%s'",
+                                            request.toString(), installationResult.cause().getMessage());
+                                    LOG.error(errorMsg);
+                                    message.fail(500, errorMsg);
+                                } else {
+                                    LOG.trace("save installation result handler successful");
+                                    message.reply(installationResult);
+                                }
+                            });
+                        }
                     });
-                    return null;
-                });
-                return null;
+                }
             });
         }
     }
@@ -96,11 +109,11 @@ public class AppInstallationVerticle extends AbstractVerticle {
         return promise.future();
     }
 
-    private Future<JsonObject> getShopInfo(String accessToken, InstallationRequest event) {
+    private Future<JsonObject> getShopInfo(String accessToken, InstallationRequest request) {
         Promise<JsonObject> promise = Promise.promise();
         JsonObject apiRequest = new JsonObject()
                 .put("action", "get-shop-info")
-                .put("apiUrl", event.apiUrl)
+                .put("apiUrl", request.apiUrl)
                 .put("token", accessToken);
         vertx.eventBus().<JsonObject>request(EpagesApiClientVerticle.EVENT_BUS_ADDRESS, apiRequest, result -> {
             if (result.succeeded()) {

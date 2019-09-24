@@ -2,17 +2,14 @@
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>[%-5level] %logger{15} - %msg%n</pattern>
+            <pattern>[%-5level] %logger{0} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="STDOUT"/>
     </root>
 
-    <logger name="de.thokari.epages.app" level="DEBUG"/>
-
-    <logger name="io.netty" level="INFO"/>
-    <logger name="com.github.mauricio.async.db.postgresql" level="INFO"/>
+    <logger name="de.thokari.epages.app" level="TRACE"/>
 
 </configuration>

@@ -15,7 +15,7 @@
         "maxPoolSize": 10,
         "username": "vertx",
         "password": "vertx",
-        "database": "epages-app-test",
+        "database": "epages-app-kickstart",
         "charset": "utf-8",
         "queryTimeout": 2000
     }

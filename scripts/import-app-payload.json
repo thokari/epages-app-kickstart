@@ -27,8 +27,8 @@
         "en": "https://thirsch.intern.epages.de:8443/callback"
     },
     "appUrl": {
-        "de": "https://example.com",
-        "en": "https://example.com"
+        "de": "https://thirsch.intern.epages.de:8443/static/welcome.html",
+        "en": "https://thirsch.intern.epages.de:8443/static/welcome.html"
     },
     "iconUrl": {
         "de": "https://via.placeholder.com/64",
@@ -96,8 +96,8 @@
         "en": "support@example.com"
     },
     "supportWebsite": {
-        "de": "https://example.com/support",
-        "en": "https://example.com/support"
+        "de": "https://thirsch.intern.epages.de:8443/static/welcome.html",
+        "en": "https://thirsch.intern.epages.de:8443/static/welcome.html"
     },
     "requirements": {
         "de": "Kostenloser Account",

@@ -2,8 +2,10 @@ package de.thokari.epages.app.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class AppConfig extends Config {
 
     public String clientId;
@@ -48,8 +50,8 @@ public class AppConfig extends Config {
         this.clientId = validate("clientId", overrideFromEnv("CLIENT_ID", clientId));
         this.clientSecret = validate("clientSecret", overrideFromEnv("CLIENT_SECRET", clientSecret));
         this.appUseSsl = validate("appUseSsl", overrideFromEnv("APP_USE_SSL", Boolean.valueOf(appUseSsl), Boolean.class));
-        this.sslKeyFile = validate("sslKeyFile", overrideFromEnv("SSL_KEY_FILE", sslKeyFile));
-        this.sslCertFile = validate("sslCertFile", overrideFromEnv("SSL_CERT_FILE", sslCertFile));
+        this.sslKeyFile = overrideFromEnv("SSL_KEY_FILE", sslKeyFile);
+        this.sslCertFile = overrideFromEnv("SSL_CERT_FILE", sslCertFile);
         this.appHostname = validate("appHostname", overrideFromEnv("APP_HOSTNAME", appHostname));
         this.appDomain = validate("appDomain", overrideFromEnv("APP_DOMAIN", appDomain));
         this.appPort = validate("appPort", overrideFromEnv("APP_PORT", appPort, Integer.class));

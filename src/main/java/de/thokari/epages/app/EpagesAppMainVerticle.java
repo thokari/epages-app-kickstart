@@ -38,9 +38,9 @@ public class EpagesAppMainVerticle extends AbstractVerticle {
             if (deployed.failed()) {
                 throw new RuntimeException("Verticle deployment failed.", deployed.cause());
             } else {
-                LOG.trace("logging at 'TRACE' level");
-                LOG.debug("logging at 'DEBUG' level");
                 LOG.info("logging at 'INFO' level");
+                LOG.debug("logging at 'DEBUG' level");
+                LOG.trace("logging at 'TRACE' level");
                 LOG.info("started with config '{}'", appConfig.toJsonObject().encode());
             }
         });
