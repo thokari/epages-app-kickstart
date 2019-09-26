@@ -23,7 +23,7 @@ import static io.vertx.core.http.HttpMethod.GET;
 
 public class HttpServerVerticle extends AbstractVerticle {
 
-    private static final Logger LOG = LoggerFactory.getLogger(EpagesAppMainVerticle.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpServerVerticle.class);
 
     public void start() {
 
@@ -56,6 +56,7 @@ public class HttpServerVerticle extends AbstractVerticle {
                                 response.setStatusCode(statusCode).end(errorMsg);
                             } else {
                                 LOG.trace("installation request handler successful");
+
                                 response.setStatusCode(302)
                                         .putHeader("Location", reply.result().body().getString("return_url"))
                                         .end();

@@ -78,7 +78,7 @@ public class AppInstallationVerticle extends AbstractVerticle {
                                     message.fail(500, errorMsg);
                                 } else {
                                     LOG.trace("save installation handler successful");
-                                    message.reply(installationResult.result());
+                                    message.reply(request.toJsonObject());
                                 }
                             });
                         }
