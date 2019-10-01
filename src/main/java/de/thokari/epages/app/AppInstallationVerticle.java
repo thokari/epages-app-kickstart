@@ -20,7 +20,7 @@ import io.vertx.ext.sql.SQLConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.text.MessageFormat.format;
+import static java.lang.String.format;
 
 public class AppInstallationVerticle extends AbstractVerticle {
 
@@ -41,7 +41,7 @@ public class AppInstallationVerticle extends AbstractVerticle {
     private void replyToInstallationRequest(Message<JsonObject> message, String clientId, String clientSecret) {
         InstallationRequest request = Model.fromJsonObject(message.body(), InstallationRequest.class);
         if (!request.hasValidSignature(clientSecret)) {
-            String errorMsg = format("invalid signature on installation request '{}'", request.toString());
+            String errorMsg = format("invalid signature on installation request '%s'", request.toString());
             LOG.error(errorMsg);
             message.fail(400, errorMsg);
         } else {
@@ -50,7 +50,7 @@ public class AppInstallationVerticle extends AbstractVerticle {
             requestOAuth2Token(clientId, clientSecret, request).setHandler(accessTokenResult -> {
                 if (accessTokenResult.failed()) {
                     LOG.trace("OAuth token handler failed");
-                    String errorMsg = format("could not get token for event '{}' because of '{}'",
+                    String errorMsg = format("could not get token for event '%s' because of '%s'",
                             request.toString(), accessTokenResult.cause().getMessage());
                     LOG.error(errorMsg);
                     message.fail(500, errorMsg);
@@ -71,7 +71,7 @@ public class AppInstallationVerticle extends AbstractVerticle {
                             createInstallation(tokenValue, shopInfo, request).setHandler(installationResult -> {
                                 if (installationResult.failed()) {
                                     LOG.trace("save installation handler failed");
-                                    String errorMsg = String.format(
+                                    String errorMsg = format(
                                             "could not create installation for event '%s' because of '%s'",
                                             request.toString(), installationResult.cause().getMessage());
                                     LOG.error(errorMsg);
