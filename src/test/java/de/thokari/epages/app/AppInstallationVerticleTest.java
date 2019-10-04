@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import static java.lang.String.format;
+
 @RunWith(VertxUnitRunner.class)
 public class AppInstallationVerticleTest {
 
@@ -42,7 +44,7 @@ public class AppInstallationVerticleTest {
             .put("access_token_url", apiMockTokenUrl)
             .put("return_url", "http://localhost:8080/epages-app")
             .put("signature", "3AmS3LcnENGi+BEkHY9Bk0D0pFUnmsudemQqjz9lybo=");
-    final InstallationRequest installationEvent = Model.fromJsonObject(installationRequestSource,
+    final InstallationRequest installationRequest = Model.fromJsonObject(installationRequestSource,
             InstallationRequest.class);
     final JsonObject tokenResponse = new JsonObject()
             .put("access_token", "4HZ9hriF6J3GOnd10JbFzdVehycOvAZf");
@@ -53,6 +55,8 @@ public class AppInstallationVerticleTest {
     AsyncSQLClient dbClient;
     HttpServer apiMock;
     MessageConsumer<JsonObject> apiClientMock;
+    MessageConsumer<JsonObject> notificationConsumerMock;
+    Promise<JsonObject> notificationReceived = Promise.promise();
 
     @BeforeClass
     public static void readConfig() throws IOException {
@@ -64,7 +68,7 @@ public class AppInstallationVerticleTest {
     public void initDatabase() {
         dbClient = PostgreSQLClient.createNonShared(vertx, appConfig.database.toJsonObject());
         dbClient.getConnection(connected -> {
-            String sql = String.format("DELETE FROM %s WHERE api_url = '%s'", "installations", apiMockUrl);
+            String sql = format("DELETE FROM %s WHERE api_url = '%s'", "installations", apiMockUrl);
             connected.result().execute(sql, databasePrepared);
         });
     }
@@ -84,8 +88,12 @@ public class AppInstallationVerticleTest {
             if ("get-shop-info".equals(message.body().getString("action"))) {
                 message.reply(new JsonObject().put("name", SHOP_NAME));
             } else {
-                message.fail(500, String.format("API request to '%s' failed", apiMockUrl));
+                message.fail(500, format("API request to '%s' failed", apiMockUrl));
             }
+        });
+
+        notificationConsumerMock = vertx.eventBus().consumer(AppInstallationVerticle.EVENT_BUS_NOTIFICATION_ADDRESS, message -> {
+            notificationReceived.complete(message.body());
         });
     }
 
@@ -107,7 +115,7 @@ public class AppInstallationVerticleTest {
     }
 
     @Test
-    public void testAppInstallationOauthDance(TestContext context) {
+    public void testAppInstallation(TestContext context) {
         Async async = context.async();
 
         // GIVEN
@@ -130,13 +138,13 @@ public class AppInstallationVerticleTest {
 
                 vertx.eventBus().<JsonObject>request(
                         AppInstallationVerticle.EVENT_BUS_ADDRESS,
-                        installationEvent.toJsonObject(),
+                        installationRequest.toJsonObject(),
                         response -> {
 
                             // THEN
                             context.assertTrue(response.succeeded(),
                                     response.cause() != null ? response.cause().getMessage() : "<no error message>");
-                            context.assertEquals(null, response.result().body());
+                            context.assertEquals(installationRequest.toString(), response.result().body().toString());
 
                             dbClient.getConnection(connected -> {
                                 if (connected.failed()) {
@@ -145,8 +153,8 @@ public class AppInstallationVerticleTest {
                                     async.complete();
                                 }
                                 connected.result().query(
-                                        String.format("SELECT * FROM installations WHERE api_url = '%s'",
-                                                installationEvent.apiUrl),
+                                        format("SELECT * FROM installations WHERE api_url = '%s'",
+                                                installationRequest.apiUrl),
                                         result -> {
                                             if (result.failed()) {
                                                 result.cause().printStackTrace();
@@ -156,13 +164,18 @@ public class AppInstallationVerticleTest {
                                             Installation installation = Model.fromJsonObject(result.result().getRows().get(0), Installation.class);
                                             context.assertEquals(tokenResponse.getString("access_token"), installation.accessToken);
                                             context.assertEquals(SHOP_NAME, installation.shopName);
-                                            async.complete();
+
+                                            notificationReceived.future().setHandler(message -> {
+                                                context.assertTrue(message.result().containsKey("access_token"));
+                                                context.assertTrue(message.result().containsKey("api_url"));
+                                                async.complete();
+                                            });
                                         });
                             });
                         });
             });
         });
-        async.awaitSuccess(2000);
+        async.awaitSuccess(1000);
     }
 
     @Test
@@ -193,7 +206,7 @@ public class AppInstallationVerticleTest {
 
                 vertx.eventBus().<JsonObject>request(
                         AppInstallationVerticle.EVENT_BUS_ADDRESS,
-                        installationEvent.toJsonObject(),
+                        installationRequest.toJsonObject(),
                         response -> {
 
                             // THEN
@@ -205,7 +218,7 @@ public class AppInstallationVerticleTest {
                         });
             });
         });
-        async.awaitSuccess(2000);
+        async.awaitSuccess(1000);
     }
 
     @Test
@@ -235,7 +248,7 @@ public class AppInstallationVerticleTest {
 
                 vertx.eventBus().<JsonObject>request(
                         AppInstallationVerticle.EVENT_BUS_ADDRESS,
-                        installationEvent.toJsonObject(),
+                        installationRequest.toJsonObject(),
                         response -> {
 
                             // THEN
@@ -247,7 +260,7 @@ public class AppInstallationVerticleTest {
                         });
             });
         });
-        async.awaitSuccess(2000);
+        async.awaitSuccess(1000);
     }
 
     @Test
@@ -259,7 +272,7 @@ public class AppInstallationVerticleTest {
         apiClientMock.unregister();
         apiClientMock = vertx.eventBus().consumer(EpagesApiClientVerticle.EVENT_BUS_ADDRESS, message -> {
             if ("get-shop-info".equals(message.body().getString("action"))) {
-                message.fail(500, String.format("API request to '%s' failed", apiMockUrl));
+                message.fail(500, format("API request to '%s' failed", apiMockUrl));
             }
         });
 
@@ -281,18 +294,18 @@ public class AppInstallationVerticleTest {
 
                 vertx.eventBus().<JsonObject>request(
                         AppInstallationVerticle.EVENT_BUS_ADDRESS,
-                        installationEvent.toJsonObject(),
+                        installationRequest.toJsonObject(),
                         response -> {
 
                             // THEN
                             context.assertTrue(response.failed());
-                            String expectedMessage = String.format("API request to '%s' failed", apiMockUrl);
+                            String expectedMessage = format("API request to '%s' failed", apiMockUrl);
                             String actualMessage = response.cause().getMessage().substring(0, expectedMessage.length());
                             context.assertEquals(expectedMessage, actualMessage);
                             async.complete();
                         });
             });
         });
-        async.awaitSuccess(2000);
+        async.awaitSuccess(1000);
     }
 }

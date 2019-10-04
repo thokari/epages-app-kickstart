@@ -85,7 +85,7 @@ public class EpagesApiClientVerticleTest {
                         });
             }));
         });
-        async.awaitSuccess(2000);
+        async.awaitSuccess(1000);
     }
 
     @Test
@@ -115,6 +115,6 @@ public class EpagesApiClientVerticleTest {
                         });
             });
         });
-        async.awaitSuccess(2000);
+        async.awaitSuccess(1000);
     }
 }

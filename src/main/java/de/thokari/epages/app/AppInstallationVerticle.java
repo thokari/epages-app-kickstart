@@ -25,6 +25,7 @@ import static java.lang.String.format;
 public class AppInstallationVerticle extends AbstractVerticle {
 
     public static final String EVENT_BUS_ADDRESS = "app_installation";
+    public static final String EVENT_BUS_NOTIFICATION_ADDRESS = "app_installation.notification";
     private static final Logger LOG = LoggerFactory.getLogger(AppInstallationVerticle.class);
     private AsyncSQLClient dbClient;
 
@@ -78,6 +79,7 @@ public class AppInstallationVerticle extends AbstractVerticle {
                                     message.fail(500, errorMsg);
                                 } else {
                                     LOG.trace("save installation handler successful");
+                                    vertx.eventBus().publish(EVENT_BUS_NOTIFICATION_ADDRESS, installationResult.result());
                                     message.reply(request.toJsonObject());
                                 }
                             });
@@ -142,7 +144,7 @@ public class AppInstallationVerticle extends AbstractVerticle {
                         promise.fail(queryResult.cause().getMessage());
                     } else {
                         LOG.info("installation '{}' saved", installation.toJsonObject().toString());
-                        promise.complete();
+                        promise.complete(installation.toJsonObject());
                     }
                     connection.close();
                 });

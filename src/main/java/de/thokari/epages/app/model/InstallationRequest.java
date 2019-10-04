@@ -94,14 +94,15 @@ public class InstallationRequest extends Model {
             LOG.error("signature validation failed because of programming error", e);
             return null;
         }
-        byte[] rawSignature = mac.doFinal((this.code + ":" + this.accessTokenUrl).getBytes());
-        return Base64.getEncoder().encodeToString(rawSignature);
+        byte[] rawSignature = mac.doFinal((code + ":" + accessTokenUrl).getBytes());
+        String base64EncodedSignature = Base64.getEncoder().encodeToString(rawSignature);
+        LOG.trace("calculated signature '{}' from code '{}' and accessTokenUrl '{}'", base64EncodedSignature, code, accessTokenUrl);
+        return base64EncodedSignature;
     }
 
     @JsonIgnore
     public Boolean hasValidSignature(String secret) {
-        String signature = calculateSignature(secret);
-        LOG.trace("calculated signature '{}'", signature);
-        return this.signature.equals(signature);
+        String calculatedSignature = calculateSignature(secret);
+        return signature.equals(calculatedSignature);
     }
 }
