@@ -1,0 +1,12 @@
+version: "3.7"
+services:
+
+  epages-app-kickstart-db:
+    image: postgres:9.4
+    environment:
+      - POSTGRES_USER=vertx
+      - POSTGRES_PASSWORD=vertx
+      - POSTGRES_DB=epages-app-kickstart
+    ports:
+      - "5432:5432"
+
